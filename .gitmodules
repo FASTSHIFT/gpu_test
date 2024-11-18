@@ -1,0 +1,3 @@
+[submodule "external/vg_lite_tvg"]
+	path = external/vg_lite_tvg
+	url = https://github.com/FASTSHIFT/vg_lite_tvg.git
