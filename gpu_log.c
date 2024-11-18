@@ -29,6 +29,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#ifdef GPU_LOG_USE_SYSLOG
+#include <syslog.h>
+#endif
+
 /*********************
  *      DEFINES
  *********************/
@@ -53,22 +57,28 @@
  *   GLOBAL FUNCTIONS
  **********************/
 
-void gpu_log_printf(enum gpu_log_level_type_e level,
-    const char* func,
-    const char* format,
-    ...)
+void gpu_log_printf(enum gpu_log_level_type_e level, const char* func, const char* format, ...)
 {
-    static const char* prompt[_GPU_LOG_LEVEL_LAST] = {
-        "INFO", "WARN", "ERRPR"
-    };
-
     va_list ap;
     va_start(ap, format);
     char buf[256];
     vsnprintf(buf, sizeof(buf), format, ap);
     va_end(ap);
 
+#ifdef GPU_LOG_USE_SYSLOG
+    static const int priority[_GPU_LOG_LEVEL_LAST] = {
+        LOG_INFO, LOG_WARNING, LOG_ERR
+    };
+
+    printf(priority[level], "[GPU] %s: %s\n", func, buf);
+
+#else
+    static const char* prompt[_GPU_LOG_LEVEL_LAST] = {
+        "INFO", "WARN", "ERRPR"
+    };
+
     printf("[GPU][%s] %s: %s\n", prompt[level], func, buf);
+#endif
 }
 
 /**********************

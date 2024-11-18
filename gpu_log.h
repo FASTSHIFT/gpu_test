@@ -74,10 +74,7 @@ enum gpu_log_level_type_e {
  * @param format Log message format
  * @param... Variable arguments
  */
-void gpu_log_printf(enum gpu_log_level_type_e level,
-    const char* func,
-    const char* format,
-    ...);
+void gpu_log_printf(enum gpu_log_level_type_e level, const char* func, const char* format, ...);
 
 /**********************
  *      MACROS
