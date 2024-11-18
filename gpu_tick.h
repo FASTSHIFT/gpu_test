@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_RECORDER_H
-#define GPU_RECORDER_H
+#ifndef GPU_TICK_H
+#define GPU_TICK_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +32,8 @@ extern "C" {
  *      INCLUDES
  *********************/
 
+#include <stdint.h>
+
 /*********************
  *      DEFINES
  *********************/
@@ -40,32 +42,36 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
+typedef uint32_t (*gpu_tick_get_cb_t)(void);
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 
 /**
- * @brief Create a new gpu recorder
- * @param dir_path The directory path to save the record file
- * @param name The name of the record file
- * @return A pointer to the created recorder object on success, NULL on failure
+ * @brief Set the callback function to get the GPU tick
+ * @param cb The callback function to get the GPU tick
  */
-struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* name);
+void gpu_tick_set_cb(gpu_tick_get_cb_t cb);
 
 /**
- * @brief Delete a gpu recorder
- * @param recorder The recorder object to delete
+ * @brief Get the GPU tick
+ * @return The GPU tick
  */
-void gpu_recorder_delete(struct gpu_recorder_s* recorder);
+uint32_t gpu_tick_get(void);
 
 /**
- * @brief Start recording
- * @param recorder The recorder object to start recording
- * @return 0 on success, -1 on failure
+ * @brief Get the elapsed time between two GPU ticks
+ * @param prev_tick The previous GPU tick
+ * @return The elapsed time in GPU ticks
  */
-int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
+uint32_t gpu_tick_elaps(uint32_t prev_tick);
+
+/**
+ * @brief Delay for a specified number of milliseconds
+ * @param ms The number of milliseconds to delay
+ */
+void gpu_delay(uint32_t ms);
 
 /**********************
  *      MACROS
@@ -75,4 +81,4 @@ int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
 } /*extern "C"*/
 #endif
 
-#endif /*GPU_RECORDER_H*/
+#endif /*GPU_TICK_H*/

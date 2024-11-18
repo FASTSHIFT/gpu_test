@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_RECORDER_H
-#define GPU_RECORDER_H
+#ifndef GPU_BUFFER_H
+#define GPU_BUFFER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +32,8 @@ extern "C" {
  *      INCLUDES
  *********************/
 
+#include "gpu_color.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -40,32 +42,35 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
+struct gpu_buffer_s {
+    enum gpu_color_format_e format;
+    int width;
+    int height;
+    int stride;
+    void* data;
+    void* data_unaligned;
+};
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 
 /**
- * @brief Create a new gpu recorder
- * @param dir_path The directory path to save the record file
- * @param name The name of the record file
- * @return A pointer to the created recorder object on success, NULL on failure
+ * Allocate a new GPU buffer with the given format, width, height, and stride.
+ * The buffer will be initialized with zeros.
+ * @param format The color format of the buffer.
+ * @param width The width of the buffer in pixels.
+ * @param height The height of the buffer in pixels.
+ * @param stride The stride of the buffer in bytes.
+ * @return A pointer to the new GPU buffer, or NULL if there was an error.
  */
-struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* name);
+struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, int width, int height, int stride);
 
 /**
- * @brief Delete a gpu recorder
- * @param recorder The recorder object to delete
+ * Free a GPU buffer.
+ * @param buffer The GPU buffer to free.
  */
-void gpu_recorder_delete(struct gpu_recorder_s* recorder);
-
-/**
- * @brief Start recording
- * @param recorder The recorder object to start recording
- * @return 0 on success, -1 on failure
- */
-int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
+void gpu_buffer_free(struct gpu_buffer_s* buffer);
 
 /**********************
  *      MACROS
@@ -75,4 +80,4 @@ int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
 } /*extern "C"*/
 #endif
 
-#endif /*GPU_RECORDER_H*/
+#endif /*GPU_TEMPL_H*/

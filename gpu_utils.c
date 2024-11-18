@@ -1,222 +1,100 @@
-/****************************************************************************
- * apps/testing/gpu/gpu_utils.c
+/*
+ * MIT License
+ * Copyright (c) 2023 - 2024 _VIFEXTech
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+/*********************
+ *      INCLUDES
+ *********************/
 
+#include "gpu_utils.h"
+#include "gpu_log.h"
+#include <errno.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <time.h>
 
-#include "gpu_test.h"
+/*********************
+ *      DEFINES
+ *********************/
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+/**********************
+ *      TYPEDEFS
+ **********************/
 
-#define CPU_CORE_CLOCK_MHZ 200
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
 
-/****************************************************************************
- * Private Data
- ****************************************************************************/
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
+/**********************
+ *      MACROS
+ **********************/
 
-/****************************************************************************
- * Name: gpu_sw_color32_mix
- ****************************************************************************/
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
 
-gpu_color32_t gpu_sw_color32_mix(gpu_color32_t c1,
-                                 gpu_color32_t c2,
-                                 uint8_t mix)
+const char* gpu_get_localtime_str(void)
 {
-  gpu_color32_t ret;
-  ret.ch.red   = ((uint16_t)c1.ch.red * mix
-                  + c2.ch.red * (255 - mix)) / 255;
-  ret.ch.green = ((uint16_t)c1.ch.green * mix
-                  + c2.ch.green * (255 - mix)) / 255;
-  ret.ch.blue  = ((uint16_t)c1.ch.blue * mix
-                  + c2.ch.blue * (255 - mix)) / 255;
-  ret.ch.alpha = 0xff;
-  return ret;
-}
+    static char str_buf[32];
+    time_t rawtime;
+    time(&rawtime);
 
-/****************************************************************************
- * Name: gpu_sw_fill_screen
- ****************************************************************************/
-
-void gpu_sw_fill_screen(struct gpu_test_context_s *ctx,
-                        gpu_color32_t color)
-{
-  GPU_ASSERT_NULL(ctx);
-  gpu_color32_t *dest = ctx->fbmem;
-  size_t size = ctx->xres * ctx->yres;
-
-  while (size--)
-    {
-      *dest++ = color;
-    }
-}
-
-/****************************************************************************
- * Name: gpu_bgra5658_to_bgra8888
- ****************************************************************************/
-
-void gpu_sw_bgra5658_to_bgra8888(gpu_color32_t *dest,
-                                 const gpu_color16_alpha_t *src,
-                                 size_t size)
-{
-  GPU_ASSERT_NULL(dest);
-  GPU_ASSERT_NULL(src);
-
-  while (size--)
-    {
-      dest->ch.red = src->color.ch.red << 3;
-      dest->ch.green = src->color.ch.green << 2;
-      dest->ch.blue = src->color.ch.blue << 3;
-      dest++;
-      src++;
-    }
-}
-
-/****************************************************************************
- * Name: gpu_sw_bgr565_to_bgrx8888
- ****************************************************************************/
-
-void gpu_sw_bgr565_to_bgrx8888(gpu_color32_t *dest,
-                               const gpu_color16_t *src,
-                               size_t size)
-{
-  GPU_ASSERT_NULL(dest);
-  GPU_ASSERT_NULL(src);
-
-  while (size--)
-    {
-      dest->ch.red = src->ch.red << 3;
-      dest->ch.green = src->ch.green << 2;
-      dest->ch.blue = src->ch.blue << 3;
-      dest->ch.alpha = 0xff;
-      dest++;
-      src++;
-    }
-}
-
-/****************************************************************************
- * Name: gpu_tick_init
- ****************************************************************************/
-
-void gpu_tick_init(void)
-{
-}
-
-/****************************************************************************
- * Name: gpu_tick_get
- ****************************************************************************/
-
-uint32_t gpu_tick_get(void)
-{
-  return 0;
-}
-
-/****************************************************************************
- * Name: gpu_tick_elaps
- ****************************************************************************/
-
-uint32_t gpu_tick_elaps(uint32_t prev_tick)
-{
-  uint32_t act_time = gpu_tick_get();
-
-  if (act_time >= prev_tick)
-    {
-      prev_tick = act_time - prev_tick;
-    }
-  else
-    {
-      prev_tick = UINT32_MAX - prev_tick + 1;
-      prev_tick += act_time;
+    struct tm* timeinfo = localtime(&rawtime);
+    if (!timeinfo) {
+        GPU_LOG_ERROR("localtime() failed");
+        return NULL;
     }
 
-  return prev_tick;
+    snprintf(str_buf, sizeof(str_buf), "%04d%02d%02d_%02d%02d%02d",
+        1900 + timeinfo->tm_year,
+        timeinfo->tm_mon, timeinfo->tm_mday, timeinfo->tm_hour,
+        timeinfo->tm_min, timeinfo->tm_sec);
+
+    return str_buf;
 }
 
-/****************************************************************************
- * Name: gpu_tick_elaps_us
- ****************************************************************************/
-
-uint32_t gpu_tick_elaps_us(uint32_t prev_tick)
+int gpu_dir_create(const char* dir_path)
 {
-  return gpu_tick_elaps(prev_tick) / (float)CPU_CORE_CLOCK_MHZ;
-}
-
-/****************************************************************************
- * Name: gpu_delay
- ****************************************************************************/
-
-void gpu_delay(uint32_t ms)
-{
-  usleep(ms * 1000);
-}
-
-/****************************************************************************
- * Name: gpu_get_localtime_str
- ****************************************************************************/
-
-void gpu_get_localtime_str(char *str_buf, size_t buf_size)
-{
-  time_t rawtime;
-  struct tm *timeinfo;
-
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-  snprintf(str_buf, buf_size, "%04d%02d%02d_%02d%02d%02d",
-           1900 + timeinfo->tm_year,
-           timeinfo->tm_mon, timeinfo->tm_mday, timeinfo->tm_hour,
-           timeinfo->tm_min, timeinfo->tm_sec);
-}
-
-/****************************************************************************
- * Name: gpu_dir_create
- ****************************************************************************/
-
-bool gpu_dir_create(const char *dir_path)
-{
-  if (access(dir_path, F_OK) == 0)
-    {
-      GPU_LOG_INFO("directory: %s already exists", dir_path);
-      return true;
+    if (access(dir_path, F_OK) == 0) {
+        GPU_LOG_INFO("directory: %s already exists", dir_path);
+        return 0;
     }
 
-  GPU_LOG_WARN("can't access directory: %s, creating...", dir_path);
+    GPU_LOG_WARN("can't access directory: %s, creating...", dir_path);
 
-  if (mkdir(dir_path, 0777) == 0)
-    {
-      GPU_LOG_INFO("OK");
-      return true;
+    int retval = mkdir(dir_path, 0777);
+    if (retval == 0) {
+        GPU_LOG_INFO("OK");
+    } else {
+        GPU_LOG_ERROR("failed: %d", dir_path, errno);
     }
 
-  GPU_LOG_ERROR("create directory: %s failed", dir_path);
-
-  return false;
+    return retval;
 }
+
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/

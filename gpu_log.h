@@ -67,6 +67,13 @@ enum gpu_log_level_type_e {
  * GLOBAL PROTOTYPES
  **********************/
 
+/**
+ * @brief Print log message
+ * @param level Log level
+ * @param func Function name
+ * @param format Log message format
+ * @param... Variable arguments
+ */
 void gpu_log_printf(enum gpu_log_level_type_e level,
     const char* func,
     const char* format,

@@ -40,13 +40,20 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_test_context_s;
+struct gpu_buffer_s;
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 
-int gpu_screenshot(struct gpu_test_context_s* ctx, const char* name);
+/**
+ * @brief Take a screenshot of the given buffer and save it to the given directory with the given name.
+ * @param dirpath The directory path to save the screenshot to.
+ * @param name The name of the screenshot file.
+ * @param buffer The buffer to take the screenshot of.
+ * @return 0 on success, -1 on failure.
+ */
+int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffer_s* buffer);
 
 /**********************
  *      MACROS

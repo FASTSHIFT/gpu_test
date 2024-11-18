@@ -1,224 +1,77 @@
-/****************************************************************************
- * apps/testing/gpu/gpu_utils.h
+/*
+ * MIT License
+ * Copyright (c) 2023 - 2024 _VIFEXTech
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-#ifndef __APPS_TESTING_GPU_GPU_UTILS_H__
-#define __APPS_TESTING_GPU_GPU_UTILS_H__
+#ifndef GPU_UTILS_H
+#define GPU_UTILS_H
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/*********************
+ *      INCLUDES
+ *********************/
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <assert.h>
 #include <stddef.h>
-#include "gpu_log.h"
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+/*********************
+ *      DEFINES
+ *********************/
 
-#define GPU_ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
-
-#define GPU_ASSERT(expr) assert(expr)
-#define GPU_ASSERT_NULL(ptr) GPU_ASSERT(ptr != NULL)
-
-#define GPU_PERF_RESET()          memset(&ctx->perf, 0, sizeof(ctx->perf))
-#define GPU_PERF_PREPARE_START()  ctx->perf.prepare = gpu_tick_get()
-#define GPU_PERF_PREPARE_STOP()   ctx->perf.prepare = gpu_tick_elaps_us(ctx->perf.prepare)
-#define GPU_PERF_RENDER_START()   ctx->perf.render = gpu_tick_get()
-#define GPU_PERF_RENDER_STOP()    ctx->perf.render = gpu_tick_elaps_us(ctx->perf.render)
-
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-
-enum gpu_test_mode_e
-{
-  GPU_TEST_MODE_DEFAULT = 0,
-  GPU_TEST_MODE_RANDOM,
-  GPU_TEST_MODE_STRESS,
-  GPU_TEST_MODE_STRESS_RANDOM, /* Run stress test, choose random cases */
-};
-
-struct gpu_test_param_s
-{
-  const char *output_dir;
-  enum gpu_test_mode_e mode;
-  int img_width;
-  int img_height;
-  bool screenshot_en;
-  int test_case;
-};
-
-struct gpu_test_context_s
-{
-  void *state;
-  void *fbmem;
-  void *recorder;
-  void *user_data;
-  int bpp;
-  int stride;
-  int xres;
-  int yres;
-  struct gpu_test_param_s param;
-  struct
-  {
-    uint32_t prepare;
-    uint32_t render;
-  } perf;
-};
-
-#pragma pack(1)
-
-typedef union gpu_color32_u
-{
-    struct
-    {
-        uint8_t blue;
-        uint8_t green;
-        uint8_t red;
-        uint8_t alpha;
-    } ch;
-    uint32_t full;
-} gpu_color32_t;
-
-typedef union gpu_color24_u
-{
-    struct
-    {
-        uint8_t blue;
-        uint8_t green;
-        uint8_t red;
-    } ch;
-    uint8_t full[3];
-} gpu_color24_t;
-
-typedef union gpu_color16_u
-{
-    struct
-    {
-        uint16_t blue : 5;
-        uint16_t green : 6;
-        uint16_t red : 5;
-    } ch;
-    uint16_t full;
-} gpu_color16_t;
-
-typedef struct gpu_color16_alpha_s
-{
-  gpu_color16_t color;
-  uint8_t alpha;
-} gpu_color16_alpha_t;
-
-#pragma pack()
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
 
-/****************************************************************************
- * Name: gpu_sw_color32_mix
- ****************************************************************************/
+#define GPU_ALIGN(number, align_bytes) \
+    ((((uintptr_t)number) + ((align_bytes) - 1)) & ~((align_bytes) - 1))
 
-gpu_color32_t gpu_sw_color32_mix(gpu_color32_t c1,
-                                 gpu_color32_t c2,
-                                 uint8_t mix);
+/**********************
+ *      TYPEDEFS
+ **********************/
 
-/****************************************************************************
- * Name: gpu_sw_fill_screen
- ****************************************************************************/
+/**********************
+ * GLOBAL PROTOTYPES
+ **********************/
 
-void gpu_sw_fill_screen(struct gpu_test_context_s *ctx,
-                        gpu_color32_t color);
+/**
+ * @brief Get the current local time as a string.
+ * @return A string representing the current local time.
+ */
+const char* gpu_get_localtime_str(void);
 
-/****************************************************************************
- * Name: gpu_sw_bgra5658_to_bgra8888
- ****************************************************************************/
+/**
+ * @brief Create a directory if it does not exist.
+ * @param dir_path The path of the directory to create.
+ * @return 0 if the directory was created successfully, -1 otherwise.
+ */
+int gpu_dir_create(const char* dir_path);
 
-void gpu_sw_bgra5658_to_bgra8888(gpu_color32_t *dest,
-                                 const gpu_color16_alpha_t *src,
-                                 size_t size);
+/**********************
+ *      MACROS
+ **********************/
 
-/****************************************************************************
- * Name: gpu_sw_bgr565_to_bgrx8888
- ****************************************************************************/
-
-void gpu_sw_bgr565_to_bgrx8888(gpu_color32_t *dest,
-                               const gpu_color16_t *src,
-                               size_t size);
-
-/****************************************************************************
- * Name: gpu_tick_init
- ****************************************************************************/
-
-void gpu_tick_init(void);
-
-/****************************************************************************
- * Name: gpu_tick_get
- ****************************************************************************/
-
-uint32_t gpu_tick_get(void);
-
-/****************************************************************************
- * Name: gpu_tick_elaps
- ****************************************************************************/
-
-uint32_t gpu_tick_elaps(uint32_t prev_tick);
-
-/****************************************************************************
- * Name: gpu_tick_elaps_us
- ****************************************************************************/
-
-uint32_t gpu_tick_elaps_us(uint32_t prev_tick);
-
-/****************************************************************************
- * Name: gpu_delay
- ****************************************************************************/
-
-void gpu_delay(uint32_t ms);
-
-/****************************************************************************
- * Name: gpu_get_localtime_str
- ****************************************************************************/
-
-void gpu_get_localtime_str(char *str_buf, size_t buf_size);
-
-/****************************************************************************
- * Name: gpu_dir_create
- ****************************************************************************/
-
-bool gpu_dir_create(const char *dir_path);
-
-#undef EXTERN
 #ifdef __cplusplus
-}
+} /*extern "C"*/
 #endif
 
-#endif /* __APPS_TESTING_GPU_GPU_UTILS_H__ */
+#endif /* GPU_UTILS_H */

@@ -21,16 +21,13 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_RECORDER_H
-#define GPU_RECORDER_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*********************
  *      INCLUDES
  *********************/
+
+#include "gpu_tick.h"
+#include <time.h>
+#include <unistd.h>
 
 /*********************
  *      DEFINES
@@ -40,39 +37,62 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
-
 /**********************
- * GLOBAL PROTOTYPES
+ *  STATIC PROTOTYPES
  **********************/
 
-/**
- * @brief Create a new gpu recorder
- * @param dir_path The directory path to save the record file
- * @param name The name of the record file
- * @return A pointer to the created recorder object on success, NULL on failure
- */
-struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* name);
+static uint32_t tick_get_cb_default(void);
 
-/**
- * @brief Delete a gpu recorder
- * @param recorder The recorder object to delete
- */
-void gpu_recorder_delete(struct gpu_recorder_s* recorder);
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 
-/**
- * @brief Start recording
- * @param recorder The recorder object to start recording
- * @return 0 on success, -1 on failure
- */
-int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
+static gpu_tick_get_cb_t tick_get_cb = tick_get_cb_default;
 
 /**********************
  *      MACROS
  **********************/
 
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
 
-#endif /*GPU_RECORDER_H*/
+void gpu_tick_set_cb(gpu_tick_get_cb_t cb)
+{
+    tick_get_cb = cb;
+}
+
+uint32_t gpu_tick_get(void)
+{
+    return tick_get_cb();
+}
+
+uint32_t gpu_tick_elaps(uint32_t prev_tick)
+{
+    uint32_t act_time = gpu_tick_get();
+
+    if (act_time >= prev_tick) {
+        prev_tick = act_time - prev_tick;
+    } else {
+        prev_tick = UINT32_MAX - prev_tick + 1;
+        prev_tick += act_time;
+    }
+
+    return prev_tick;
+}
+
+void gpu_delay(uint32_t ms)
+{
+    usleep(ms * 1000);
+}
+
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
+
+static uint32_t tick_get_cb_default(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}

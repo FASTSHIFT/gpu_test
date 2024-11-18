@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_RECORDER_H
-#define GPU_RECORDER_H
+#ifndef GPU_ASSERT_H
+#define GPU_ASSERT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,40 +32,22 @@ extern "C" {
  *      INCLUDES
  *********************/
 
+#include <assert.h>
+
 /*********************
  *      DEFINES
  *********************/
+
+#define GPU_ASSERT(expr) assert(expr)
+#define GPU_ASSERT_NULL(ptr) GPU_ASSERT(ptr != NULL)
 
 /**********************
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
-
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-
-/**
- * @brief Create a new gpu recorder
- * @param dir_path The directory path to save the record file
- * @param name The name of the record file
- * @return A pointer to the created recorder object on success, NULL on failure
- */
-struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* name);
-
-/**
- * @brief Delete a gpu recorder
- * @param recorder The recorder object to delete
- */
-void gpu_recorder_delete(struct gpu_recorder_s* recorder);
-
-/**
- * @brief Start recording
- * @param recorder The recorder object to start recording
- * @return 0 on success, -1 on failure
- */
-int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
 
 /**********************
  *      MACROS
@@ -75,4 +57,4 @@ int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
 } /*extern "C"*/
 #endif
 
-#endif /*GPU_RECORDER_H*/
+#endif /*GPU_ASSERT_H*/

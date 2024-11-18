@@ -26,7 +26,8 @@
  *********************/
 
 #include "gpu_recorder.h"
-#include "gpu_test.h"
+#include "gpu_assert.h"
+#include "gpu_log.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -43,7 +44,6 @@
  **********************/
 
 struct gpu_recorder_s {
-    struct gpu_test_context_s* ctx;
     int fd;
 };
 
@@ -51,7 +51,7 @@ struct gpu_recorder_s {
  * GLOBAL PROTOTYPES
  **********************/
 
-struct gpu_recorder_s* gpu_recorder_create(struct gpu_test_context_s* ctx, const char* name)
+struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* name)
 {
     struct gpu_recorder_s* recorder;
     char path[256];
@@ -59,7 +59,7 @@ struct gpu_recorder_s* gpu_recorder_create(struct gpu_test_context_s* ctx, const
     gpu_get_localtime_str(filename, sizeof(filename));
 
     snprintf(path, sizeof(path), "%s/report_%s_%s.csv",
-        ctx->param.output_dir, name, filename);
+        dir_path, name, filename);
 
     int fd = open(path, O_CREAT | O_WRONLY | O_CLOEXEC, 0666);
     if (fd < 0) {
@@ -70,7 +70,6 @@ struct gpu_recorder_s* gpu_recorder_create(struct gpu_test_context_s* ctx, const
     recorder = calloc(1, sizeof(struct gpu_recorder_s));
     GPU_ASSERT_NULL(recorder);
     recorder->fd = fd;
-    recorder->ctx = ctx;
     GPU_LOG_INFO("recorder file: %s created, fd = %d", path, fd);
     return recorder;
 }
@@ -79,6 +78,8 @@ void gpu_recorder_delete(struct gpu_recorder_s* recorder)
 {
     GPU_ASSERT_NULL(recorder);
     close(recorder->fd);
+    GPU_LOG_INFO("recorder file closed, fd = %d", recorder->fd);
+
     memset(recorder, 0, sizeof(struct gpu_recorder_s));
     free(recorder);
     GPU_LOG_INFO("recorder deleted");

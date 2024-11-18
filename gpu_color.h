@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_RECORDER_H
-#define GPU_RECORDER_H
+#ifndef GPU_COLOR_H
+#define GPU_COLOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +32,8 @@ extern "C" {
  *      INCLUDES
  *********************/
 
+#include <stdint.h>
+
 /*********************
  *      DEFINES
  *********************/
@@ -40,32 +42,57 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
+typedef enum gpu_color_format_e {
+    GPU_COLOR_FORMAT_BGR565,
+    GPU_COLOR_FORMAT_BGR888,
+    GPU_COLOR_FORMAT_BGRA8888,
+    GPU_COLOR_FORMAT_BGRX8888,
+    GPU_COLOR_FORMAT_BGRA5658,
+} gpu_color_format_t;
+
+#pragma pack(1)
+
+typedef union gpu_color_bgra8888_u {
+    struct
+    {
+        uint8_t blue;
+        uint8_t green;
+        uint8_t red;
+        uint8_t alpha;
+    } ch;
+    uint32_t full;
+} gpu_color32_t, gpu_color_bgra8888_t;
+
+typedef union gpu_color_bgr888_u {
+    struct
+    {
+        uint8_t blue;
+        uint8_t green;
+        uint8_t red;
+    } ch;
+    uint8_t full[3];
+} gpu_color24_t, gpu_color_bgr888_t;
+
+typedef union gpu_color_bgr565_u {
+    struct
+    {
+        uint16_t blue : 5;
+        uint16_t green : 6;
+        uint16_t red : 5;
+    } ch;
+    uint16_t full;
+} gpu_color16_t, gpu_color_bgr565_t;
+
+typedef struct gpu_color_bgra5658_s {
+    gpu_color16_t color;
+    uint8_t alpha;
+} gpu_color16_alpha_t, gpu_color_bgra5658_t;
+
+#pragma pack()
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-
-/**
- * @brief Create a new gpu recorder
- * @param dir_path The directory path to save the record file
- * @param name The name of the record file
- * @return A pointer to the created recorder object on success, NULL on failure
- */
-struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* name);
-
-/**
- * @brief Delete a gpu recorder
- * @param recorder The recorder object to delete
- */
-void gpu_recorder_delete(struct gpu_recorder_s* recorder);
-
-/**
- * @brief Start recording
- * @param recorder The recorder object to start recording
- * @return 0 on success, -1 on failure
- */
-int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
 
 /**********************
  *      MACROS
@@ -75,4 +102,4 @@ int gpu_recorder_write_string(struct gpu_recorder_s* recorder, const char* str);
 } /*extern "C"*/
 #endif
 
-#endif /*GPU_RECORDER_H*/
+#endif /*GPU_COLOR_H*/

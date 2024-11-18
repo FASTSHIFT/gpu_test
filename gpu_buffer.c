@@ -25,13 +25,19 @@
  *      INCLUDES
  *********************/
 
-#include "gpu_screenshot.h"
-#include "gpu_assert.h"
 #include "gpu_buffer.h"
+#include "gpu_assert.h"
 #include "gpu_log.h"
 #include "gpu_utils.h"
-#include <png.h>
-#include <stdio.h>
+#include <stdlib.h>
+
+/*********************
+ *      DEFINES
+ *********************/
+
+#ifndef GPU_BUF_ALIGN
+#define GPU_BUF_ALIGN 64
+#endif
 
 /**********************
  *      TYPEDEFS
@@ -40,8 +46,6 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-
-static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* path);
 
 /**********************
  *  STATIC VARIABLES
@@ -55,53 +59,42 @@ static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* pa
  *   GLOBAL FUNCTIONS
  **********************/
 
-int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffer_s* buffer)
+struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, int width, int height, int stride)
 {
-    GPU_ASSERT_NULL(dirpath);
-    GPU_ASSERT_NULL(name);
+    GPU_ASSERT(width > 0);
+    GPU_ASSERT(height > 0);
+    GPU_ASSERT(stride > 0);
+
+    struct gpu_buffer_s* buffer = calloc(1, sizeof(struct gpu_buffer_s));
     GPU_ASSERT_NULL(buffer);
 
-    int retval;
-    char path[256];
-    char time_str[64];
+    buffer->format = format;
+    buffer->width = width;
+    buffer->height = height;
+    buffer->stride = stride;
 
-    GPU_LOG_INFO("Taking screenshot of '%s' ...", name);
+    buffer->data_unaligned = calloc(1, stride * height + GPU_BUF_ALIGN);
+    GPU_ASSERT_NULL(buffer->data_unaligned);
+    buffer->data = GPU_ALIGN(buffer->data_unaligned, GPU_BUF_ALIGN);
 
-    gpu_get_localtime_str(time_str, sizeof(time_str));
-    snprintf(path, sizeof(path), "%s/screenshot_%s_%s.png", dirpath, name, time_str);
+    GPU_LOG_INFO("Allocated buffer %p, format %d, size W%dxH%d, stride %d, data %p",
+        buffer, format, width, height, stride, buffer->data);
+}
 
-    retval = save_img_file(buffer, path);
+void gpu_buffer_free(struct gpu_buffer_s* buffer)
+{
+    GPU_ASSERT_NULL(buffer);
+    GPU_ASSERT_NULL(buffer->data);
+    GPU_ASSERT_NULL(buffer->data_unaligned);
 
-    if (retval > 0) {
-        GPU_LOG_INFO("Screenshot saved to %s", path);
-    } else {
-        GPU_LOG_ERROR("Failed to save screenshot: %d", retval);
-    }
+    GPU_LOG_INFO("Freed buffer %p, format %d, size W%dxH%d, stride %d, data %p",
+        buffer, buffer->format, buffer->width, buffer->height, buffer->stride, buffer->data);
+    free(buffer->data_unaligned);
 
-    return retval;
+    memset(buffer, 0, sizeof(struct gpu_buffer_s));
+    free(buffer);
 }
 
 /**********************
  *   STATIC FUNCTIONS
  **********************/
-
-static int save_img_file(struct gpu_test_context_s* ctx, const char* path)
-{
-    png_image image;
-    int retval;
-
-    /* Construct the PNG image structure. */
-
-    memset(&image, 0, sizeof(image));
-
-    image.version = PNG_IMAGE_VERSION;
-    image.width = ctx->xres;
-    image.height = ctx->yres;
-    image.format = PNG_FORMAT_BGRA;
-
-    /* Write the PNG image. */
-
-    retval = png_image_write_to_file(&image, path, 0, ctx->fbmem, ctx->stride, NULL);
-
-    return retval;
-}
