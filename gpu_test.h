@@ -1,78 +1,64 @@
-/****************************************************************************
- * apps/testing/gpu/gpu_test.h
+/*
+ * MIT License
+ * Copyright (c) 2023 - 2024 _VIFEXTech
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-#ifndef __APPS_TESTING_GPU_TEST_H
-#define __APPS_TESTING_GPU_TEST_H
-
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-
-#include <stdint.h>
-#include <assert.h>
-#include "gpu_log.h"
-#include "gpu_utils.h"
-#include "gpu_recorder.h"
-#include "gpu_screenshot.h"
-
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
+#ifndef GPU_TEST_H
+#define GPU_TEST_H
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
+extern "C" {
 #endif
 
-/****************************************************************************
- * Name: gpu_test_run
- ****************************************************************************/
+/*********************
+ *      INCLUDES
+ *********************/
 
+/*********************
+ *      DEFINES
+ *********************/
+
+/**********************
+ *      TYPEDEFS
+ **********************/
+
+struct gpu_test_context_s;
+
+/**********************
+ * GLOBAL PROTOTYPES
+ **********************/
+
+/**
+ * @brief Run the GPU test
+ * @param ctx The GPU test context
+ * @return 0 on success, -1 on failure
+ */
 int gpu_test_run(struct gpu_test_context_s *ctx);
 
-/****************************************************************************
- * Name: gpu_fb_poll
- ****************************************************************************/
+/**********************
+ *      MACROS
+ **********************/
 
-bool gpu_fb_poll(struct gpu_test_context_s *ctx);
-
-/****************************************************************************
- * Name: gpu_fb_update
- ****************************************************************************/
-
-void gpu_fb_update(struct gpu_test_context_s *ctx);
-
-#undef EXTERN
 #ifdef __cplusplus
-}
+} /*extern "C"*/
 #endif
 
-#endif /* __APPS_TESTING_GPU_TEST_H */
+#endif /* GPU_TEST_H */
