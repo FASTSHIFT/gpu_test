@@ -1,152 +1,114 @@
-/****************************************************************************
- * apps/testing/gpu/gpu_screenshot.c
+/*
+ * MIT License
+ * Copyright (c) 2023 - 2024 _VIFEXTech
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+/*********************
+ *      INCLUDES
+ *********************/
 
 #include "gpu_screenshot.h"
 #include "gpu_utils.h"
+#include <errno.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <png.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
 
-#ifdef CONFIG_LIB_PNG
-#include <png.h>
-#define SCREENSHOT_EXT ".png"
-#else
-#define SCREENSHOT_EXT ".raw"
-#endif
+/**********************
+ *      TYPEDEFS
+ **********************/
 
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
 
-#ifdef CONFIG_LIB_PNG
+static int save_img_file(struct gpu_test_context_s* ctx, const char* path);
 
-/****************************************************************************
- * Name: save_img_file
- ****************************************************************************/
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 
-static int save_img_file(struct gpu_test_context_s *ctx,
-                         const char *path)
+/**********************
+ *      MACROS
+ **********************/
+
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
+
+int gpu_screenshot(struct gpu_test_context_s* ctx, const char* name)
 {
-  png_image image;
-  int retval;
+    GPU_ASSERT_NULL(ctx);
+    GPU_ASSERT_NULL(name);
 
-  /* Construct the PNG image structure. */
+    int retval;
+    char path[256];
+    char time_str[64];
 
-  memset(&image, 0, sizeof(image));
-
-  image.version = PNG_IMAGE_VERSION;
-  image.width   = ctx->xres;
-  image.height  = ctx->yres;
-  image.format  = PNG_FORMAT_BGRA;
-
-  /* Write the PNG image. */
-
-  retval = png_image_write_to_file(&image, path, 0, ctx->fbmem,
-                                   ctx->stride, NULL);
-
-  return retval;
-}
-#else
-
-/****************************************************************************
- * Name: save_img_file
- ****************************************************************************/
-
-static int save_img_file(struct gpu_test_context_s *ctx,
-                         const char *path)
-{
-  size_t len = ctx->stride * ctx->yres;
-  size_t written = 0;
-  int retval = 0;
-  int fd;
-
-  fd = open(path, O_CREAT | O_WRONLY | O_CLOEXEC, 0666);
-  if (fd < 0)
-    {
-      GPU_LOG_ERROR("Failed to open file %s", path);
-      return -1;
+    if (!ctx->param.screenshot_en) {
+        return 0;
     }
 
-  while (written < len)
-    {
-      ssize_t ret = write(fd, ctx->fbmem + written, len - written);
+    GPU_LOG_INFO("Taking screenshot of '%s' ...", name);
 
-      if (ret < 0)
-        {
-          GPU_LOG_ERROR("write failed: %d", errno);
-          retval = -1;
-          break;
-        }
+    gpu_get_localtime_str(time_str, sizeof(time_str));
+    snprintf(path, sizeof(path), "%s/screenshot_%s_%s.png",
+        ctx->param.output_dir,
+        name, time_str);
 
-      written += ret;
+    retval = save_img_file(ctx, path);
+
+    if (retval > 0) {
+        GPU_LOG_INFO("Screenshot saved to %s", path);
+    } else {
+        GPU_LOG_ERROR("Failed to save screenshot: %d", retval);
     }
 
-  close(fd);
-
-  return retval;
+    return retval;
 }
 
-#endif /* CONFIG_LIB_PNG */
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
 
-/****************************************************************************
- * Name: gpu_screenshot
- ****************************************************************************/
-
-int gpu_screenshot(struct gpu_test_context_s *ctx, const char *name)
+static int save_img_file(struct gpu_test_context_s* ctx, const char* path)
 {
-  GPU_ASSERT_NULL(ctx);
-  GPU_ASSERT_NULL(name);
+    png_image image;
+    int retval;
 
-  int retval;
-  char path[256];
-  char time_str[64];
+    /* Construct the PNG image structure. */
 
-  if (!ctx->param.screenshot_en)
-    {
-      return 0;
-    }
+    memset(&image, 0, sizeof(image));
 
-  GPU_LOG_INFO("Taking screenshot of '%s' ...", name);
+    image.version = PNG_IMAGE_VERSION;
+    image.width = ctx->xres;
+    image.height = ctx->yres;
+    image.format = PNG_FORMAT_BGRA;
 
-  gpu_get_localtime_str(time_str, sizeof(time_str));
-  snprintf(path, sizeof(path), "%s/screenshot_%s_%s." SCREENSHOT_EXT,
-           ctx->param.output_dir,
-           name, time_str);
+    /* Write the PNG image. */
 
-  retval = save_img_file(ctx, path);
+    retval = png_image_write_to_file(&image, path, 0, ctx->fbmem, ctx->stride, NULL);
 
-  if (retval > 0)
-    {
-      GPU_LOG_INFO("Screenshot saved to %s", path);
-    }
-  else
-    {
-      GPU_LOG_ERROR("Failed to save screenshot: %d", retval);
-    }
-
-  return retval;
+    return retval;
 }

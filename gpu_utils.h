@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <stddef.h>
 #include "gpu_log.h"
 
 /****************************************************************************
