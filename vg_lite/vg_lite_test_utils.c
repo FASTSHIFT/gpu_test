@@ -185,7 +185,7 @@ void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_
     }
 
     struct gpu_buffer_s* gpu_buffer = gpu_buffer_alloc(
-        width, height, stride, 64, vg_lite_test_vg_format_to_gpu_format(format));
+        width, height, vg_lite_test_vg_format_to_gpu_format(format), stride, 64);
 
     memset(buffer, 0, sizeof(vg_lite_buffer_t));
     buffer->memory = gpu_buffer->data;
@@ -217,6 +217,70 @@ void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const
     gpu_buffer->height = vg_buffer->height;
     gpu_buffer->stride = vg_buffer->stride;
     gpu_buffer->format = vg_lite_test_vg_format_to_gpu_format(vg_buffer->format);
+}
+
+const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format)
+{
+    switch (format) {
+        VG_LITE_ENUM_TO_STRING(RGBA8888);
+        VG_LITE_ENUM_TO_STRING(BGRA8888);
+        VG_LITE_ENUM_TO_STRING(RGBX8888);
+        VG_LITE_ENUM_TO_STRING(BGRX8888);
+        VG_LITE_ENUM_TO_STRING(RGB565);
+        VG_LITE_ENUM_TO_STRING(BGR565);
+        VG_LITE_ENUM_TO_STRING(RGBA4444);
+        VG_LITE_ENUM_TO_STRING(BGRA4444);
+        VG_LITE_ENUM_TO_STRING(BGRA5551);
+        VG_LITE_ENUM_TO_STRING(A4);
+        VG_LITE_ENUM_TO_STRING(A8);
+        VG_LITE_ENUM_TO_STRING(L8);
+        VG_LITE_ENUM_TO_STRING(YUYV);
+
+        VG_LITE_ENUM_TO_STRING(YUY2);
+        VG_LITE_ENUM_TO_STRING(NV12);
+        VG_LITE_ENUM_TO_STRING(ANV12);
+        VG_LITE_ENUM_TO_STRING(AYUY2);
+
+        VG_LITE_ENUM_TO_STRING(YV12);
+        VG_LITE_ENUM_TO_STRING(YV24);
+        VG_LITE_ENUM_TO_STRING(YV16);
+        VG_LITE_ENUM_TO_STRING(NV16);
+
+        VG_LITE_ENUM_TO_STRING(YUY2_TILED);
+        VG_LITE_ENUM_TO_STRING(NV12_TILED);
+        VG_LITE_ENUM_TO_STRING(ANV12_TILED);
+        VG_LITE_ENUM_TO_STRING(AYUY2_TILED);
+
+        VG_LITE_ENUM_TO_STRING(INDEX_1);
+        VG_LITE_ENUM_TO_STRING(INDEX_2);
+        VG_LITE_ENUM_TO_STRING(INDEX_4);
+        VG_LITE_ENUM_TO_STRING(INDEX_8);
+
+        VG_LITE_ENUM_TO_STRING(RGBA2222);
+        VG_LITE_ENUM_TO_STRING(BGRA2222);
+        VG_LITE_ENUM_TO_STRING(ABGR2222);
+        VG_LITE_ENUM_TO_STRING(ARGB2222);
+        VG_LITE_ENUM_TO_STRING(ABGR4444);
+        VG_LITE_ENUM_TO_STRING(ARGB4444);
+        VG_LITE_ENUM_TO_STRING(ABGR8888);
+        VG_LITE_ENUM_TO_STRING(ARGB8888);
+        VG_LITE_ENUM_TO_STRING(ABGR1555);
+        VG_LITE_ENUM_TO_STRING(RGBA5551);
+        VG_LITE_ENUM_TO_STRING(ARGB1555);
+        VG_LITE_ENUM_TO_STRING(XBGR8888);
+        VG_LITE_ENUM_TO_STRING(XRGB8888);
+        VG_LITE_ENUM_TO_STRING(RGBA8888_ETC2_EAC);
+        VG_LITE_ENUM_TO_STRING(RGB888);
+        VG_LITE_ENUM_TO_STRING(BGR888);
+        VG_LITE_ENUM_TO_STRING(ABGR8565);
+        VG_LITE_ENUM_TO_STRING(BGRA5658);
+        VG_LITE_ENUM_TO_STRING(ARGB8565);
+        VG_LITE_ENUM_TO_STRING(RGBA5658);
+    default:
+        break;
+    }
+
+    return "UNKNOW";
 }
 
 /**********************

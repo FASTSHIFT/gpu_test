@@ -57,6 +57,10 @@ struct gpu_test_context_s;
 struct vg_lite_test_context_s {
     struct gpu_test_context_s* gpu_ctx;
     vg_lite_buffer_t target_buffer;
+    vg_lite_buffer_t src_buffer;
+    uint32_t prepare_tick;
+    uint32_t render_tick;
+    char remark_text[128];
 };
 
 typedef vg_lite_error_t (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ctx);
@@ -83,6 +87,21 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx);
  * @param ctx The test context to use
  */
 void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx);
+
+/**
+ * @brief Reset the test context
+ * @param ctx The test context to reset
+ * @note This function should be called after each test case to ensure a clean state for the next test case.
+ */
+void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx);
+
+/**
+ * @brief Record the test context
+ * @param ctx The test context to record
+ * @param testcase_str The name of the test case
+ * @param error The error code of the test case
+ */
+void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const char *testcase_str, vg_lite_error_t error);
 
 /**********************
  *      MACROS

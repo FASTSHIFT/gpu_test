@@ -87,6 +87,8 @@ const char* vg_lite_test_error_string(vg_lite_error_t error);
  */
 void vg_lite_test_error_dump_info(vg_lite_error_t error);
 
+
+
 /**
  * @brief Allocate a GPU buffer for VG Lite.
  * @param buffer The VG Lite buffer to be allocated.
@@ -109,6 +111,13 @@ void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer);
  * @param vg_buffer The VG Lite buffer to be copied.
  */
 void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const vg_lite_buffer_t* vg_buffer);
+
+/**
+ * @breif Convert a VG Lite buffer format to a string.
+ * @param format The VG Lite buffer format.
+ * @return The string of the VG Lite buffer format.
+ */
+const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format);
 
 /**********************
  *      MACROS

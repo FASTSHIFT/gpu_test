@@ -107,31 +107,33 @@ int vg_lite_test_run(struct gpu_test_context_s* ctx)
 
 static void vg_lite_test_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item)
 {
-    if (!vg_lite_query_feature(item->feature)) {
+    if (item->feature != gcFEATURE_BIT_VG_NONE && !vg_lite_query_feature(item->feature)) {
         return;
     }
 
     GPU_LOG_INFO("Running test case: %s", item->name);
 
-    /* Clear the target buffer */
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, NULL, 0));
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_finish());
+    vg_lite_test_context_reset(ctx);
 
-    uint32_t render_tick = 0;
-    uint32_t preapre_tick = gpu_tick_get();
-
-    /* Run test case */
+    uint32_t start_tick = gpu_tick_get();
     vg_lite_error_t error = item->on_setup(ctx);
-
-    preapre_tick = gpu_tick_elaps(preapre_tick);
+    ctx->prepare_tick = gpu_tick_elaps(start_tick);
 
     if (error == VG_LITE_SUCCESS) {
-        render_tick = gpu_tick_get();
+        start_tick = gpu_tick_get();
         error = vg_lite_finish();
-        render_tick = gpu_tick_elaps(render_tick);
+        ctx->render_tick = gpu_tick_elaps(start_tick);
     }
 
-    item->on_teardown(ctx);
+    if (item->on_teardown) {
+        item->on_teardown(ctx);
+    }
+
+    if (error == VG_LITE_SUCCESS) {
+        GPU_LOG_INFO("Test case %s PASS", item->name);
+    }
+
+    vg_lite_test_context_record(ctx, item->name, error);
 
     if (ctx->gpu_ctx->param.screenshot_en) {
         struct gpu_buffer_s screenshot_buffer;

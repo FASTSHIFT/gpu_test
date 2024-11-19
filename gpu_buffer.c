@@ -56,7 +56,7 @@
  *   GLOBAL FUNCTIONS
  **********************/
 
-struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, uint32_t width, uint32_t height, uint32_t stride, uint32_t align)
+struct gpu_buffer_s* gpu_buffer_alloc(uint32_t width, uint32_t height, enum gpu_color_format_e format, uint32_t stride, uint32_t align)
 {
     GPU_ASSERT(width > 0);
     GPU_ASSERT(height > 0);
