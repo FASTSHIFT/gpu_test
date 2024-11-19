@@ -180,6 +180,13 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
         }
     }
 
+    if (param->mode == GPU_TEST_MODE_STRESS) {
+        if (param->screenshot_en) {
+            GPU_LOG_WARN("Screenshot is not enabled in stress mode, disable it");
+            param->screenshot_en = false;
+        }
+    }
+
     GPU_LOG_INFO("Test mode: %d", param->mode);
     GPU_LOG_INFO("Output DIR: %s", param->output_dir);
     GPU_LOG_INFO("Image size: %dx%d", param->img_width, param->img_height);

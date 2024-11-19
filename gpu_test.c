@@ -56,9 +56,16 @@
 
 int gpu_test_run(struct gpu_test_context_s* ctx)
 {
-    ctx->recorder = gpu_recorder_create(ctx->param.output_dir, "vg_lite");
+    if (ctx->param.mode == GPU_TEST_MODE_DEFAULT) {
+        ctx->recorder = gpu_recorder_create(ctx->param.output_dir, "vg_lite");
+    }
+
     int ret = vg_lite_test_run(ctx);
-    gpu_recorder_delete(ctx->recorder);
+
+    if (ctx->recorder) {
+        gpu_recorder_delete(ctx->recorder);
+    }
+
     return ret;
 }
 
