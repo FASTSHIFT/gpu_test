@@ -29,7 +29,6 @@
 #include "gpu_assert.h"
 #include "gpu_buffer.h"
 #include "gpu_log.h"
-#include "gpu_utils.h"
 #include <png.h>
 #include <stdio.h>
 #include <string.h>
@@ -65,7 +64,7 @@ int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffe
     GPU_LOG_INFO("Taking screenshot of '%s' ...", name);
 
     char path[256];
-    snprintf(path, sizeof(path), "%s/screenshot_%s_%s.png", dirpath, name, gpu_get_localtime_str());
+    snprintf(path, sizeof(path), "%s/screenshot_%s.png", dirpath, name);
 
     int retval = save_buffer_to_file(buffer, path);
 

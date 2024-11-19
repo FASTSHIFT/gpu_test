@@ -56,8 +56,8 @@ struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* nam
 {
     struct gpu_recorder_s* recorder;
     char path[256];
-    snprintf(path, sizeof(path), "%s/report_%s_%s.csv",
-        dir_path, name, gpu_get_localtime_str());
+    snprintf(path, sizeof(path), "%s/report_%s.csv",
+        dir_path, name);
 
     int fd = open(path, O_CREAT | O_WRONLY | O_CLOEXEC, 0666);
     if (fd < 0) {
