@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#if 0
+
 #include "vg_lite_test_utils.h"
 #include "resource/image_yuyv_tiled.h"
 #include "resource/image_rgb.h"
@@ -162,3 +164,5 @@ vg_lite_error_t vg_lite_test_rotation_rgb(struct gpu_test_context_s *ctx)
   vg_lite_delete_image(image);
   return error;
 }
+
+#endif

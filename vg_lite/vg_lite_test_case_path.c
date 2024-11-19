@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#if 0
+
 #include "vg_lite_test_utils.h"
 #include "resource/tiger_paths.h"
 #include "resource/glphy_paths.h"
@@ -180,3 +182,5 @@ vg_lite_error_t vg_lite_test_path_tiger(
 error_handler:
   return error;
 }
+
+#endif

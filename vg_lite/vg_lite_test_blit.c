@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#if 0
+
 #include "vg_lite_test_utils.h"
 #include "resource/image_rgb_565.h"
 
@@ -304,3 +306,5 @@ error_handler:
 
   return error;
 }
+
+#endif

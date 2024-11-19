@@ -1,266 +1,86 @@
-/****************************************************************************
- * apps/testing/gpu/vg_lite/vg_lite_test_utils.h
+/*
+ * MIT License
+ * Copyright (c) 2023 - 2024 _VIFEXTech
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-#ifndef __APPS_TESTING_GPU_VG_LITE_VG_LITE_TEST_UTILS_H
-#define __APPS_TESTING_GPU_VG_LITE_VG_LITE_TEST_UTILS_H
+#ifndef VG_LITE_TEST_UTILS_H
+#define VG_LITE_TEST_UTILS_H
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+/*********************
+ *      INCLUDES
+ *********************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <inttypes.h>
+#include "../gpu_log.h"
 #include <vg_lite.h>
-#include "../gpu_test.h"
-
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#define VG_LITE_IS_ERROR(err) (err > 0)
-
-#define VG_LITE_CHECK_ERROR(func) \
-do { \
-    error = func; \
-    if (VG_LITE_IS_ERROR(error)) \
-      { \
-        GPU_LOG_ERROR("Execute '" #func "' error(%d): %s", \
-                      (int)error, vg_lite_get_error_type_string(error)); \
-        goto error_handler; \
-      } \
-} while (0)
-
-#define VG_LITE_ALIGN(number, align_bytes)    \
-        (((number) + ((align_bytes) - 1)) & ~((align_bytes) - 1))
-
-#define VG_LITE_CTX      ((struct vg_lite_test_ctx_s*)((ctx)->user_data))
-#define VG_LITE_SRC_BUF  (&(VG_LITE_CTX->src_buffer))
-#define VG_LITE_DEST_BUF (&(VG_LITE_CTX->dest_buffer))
-
-#define VG_LITE_FB_WIDTH  (VG_LITE_DEST_BUF->width)
-#define VG_LITE_FB_HEIGHT (VG_LITE_DEST_BUF->height)
-
-#define VG_LITE_USE_DIRECT_MODE 1
-
-#if VG_LITE_USE_DIRECT_MODE
-#define VG_LITE_FB_UPDATE()
-#else
-#define VG_LITE_FB_UPDATE()
-#endif
-
-/* 3(MOVE) + 3(LINE) * 3 + 7(CUBIC) * 4 + 1(CLOSE/END) */
-#define VG_LITE_RECT_PATH_LEN_MAX 41
-
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-
-struct vg_lite_test_ctx_s
-{
-  vg_lite_buffer_t src_buffer;
-  vg_lite_buffer_t dest_buffer;
-};
-
-struct vg_lite_area_s
-{
-  int x1;
-  int y1;
-  int x2;
-  int y2;
-};
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
+extern "C" {
 #endif
 
-/****************************************************************************
- * Name: vg_lite_get_error_type_string
- ****************************************************************************/
+/*********************
+ *      DEFINES
+ *********************/
 
-const char *vg_lite_get_error_type_string(vg_lite_error_t error);
+#define VG_LITE_TEST_CHECK_ERROR(func)                                  \
+    do {                                                                \
+        vg_lite_error_t error = func;                                   \
+        if (error != VG_LITE_SUCCESS) {                                 \
+            GPU_LOG_ERROR("Execute '" #func "' error: %d", (int)error); \
+            vg_lite_test_error_dump_info(error);                        \
+            goto error_handler;                                         \
+        }                                                               \
+    } while (0)
 
-/****************************************************************************
- * Name: vg_lite_get_buffer_format_string
- ****************************************************************************/
+/**********************
+ *      TYPEDEFS
+ **********************/
 
-const char *vg_lite_get_buffer_format_string(
-  vg_lite_buffer_format_t format);
+/**********************
+ * GLOBAL PROTOTYPES
+ **********************/
 
-/****************************************************************************
- * Name: vg_lite_get_filter_string
- ****************************************************************************/
+/**
+ * @brief Dump the information of the VG Lite library.
+ */
+void vg_lite_test_dump_info(void);
 
-const char *vg_lite_get_filter_string(vg_lite_filter_t filter);
+/**
+ * @brief Get the error string.
+ * @param error The error code.
+ * @return The error string.
+ */
+const char* vg_lite_test_error_string(vg_lite_error_t error);
 
-/****************************************************************************
- * Name: vg_lite_get_blend_string
- ****************************************************************************/
+/**
+ * @brief Dump error information.
+ * @param error The error code.
+ */
+void vg_lite_test_error_dump_info(vg_lite_error_t error);
 
-const char *vg_lite_get_blend_string(vg_lite_blend_t blend);
-
-/****************************************************************************
- * Name: vg_lite_get_global_alpha_string
- ****************************************************************************/
-
-const char *vg_lite_get_global_alpha_string(
-  vg_lite_global_alpha_t global_alpha);
-
-/****************************************************************************
- * Name: vg_lite_get_feature_string
- ****************************************************************************/
-
-const char *vg_lite_get_feature_string(vg_lite_feature_t feature);
-
-/****************************************************************************
- * Name: vg_lite_dump_buffer_info
- ****************************************************************************/
-
-void vg_lite_dump_buffer_info(const char *name,
-                              const vg_lite_buffer_t *buffer);
-
-/****************************************************************************
- * Name: vg_lite_draw_fb
- ****************************************************************************/
-
-void vg_lite_draw_fb(struct gpu_test_context_s *ctx,
-                     vg_lite_buffer_t *buffer,
-                     int x_pos, int y_pos);
-
-/****************************************************************************
- * Name: vg_lite_draw_fb_center
- ****************************************************************************/
-
-void vg_lite_draw_fb_center(struct gpu_test_context_s *ctx);
-
-/****************************************************************************
- * Name: vg_lite_buffer_init
- ****************************************************************************/
-
-void vg_lite_buffer_init(vg_lite_buffer_t *buffer);
-
-/****************************************************************************
- * Name: vg_lite_color_premult
- ****************************************************************************/
-
-vg_lite_error_t vg_lite_color_premult(vg_lite_buffer_t *buffer);
-
-/****************************************************************************
- * Name: vg_lite_create_image
- ****************************************************************************/
-
-vg_lite_error_t vg_lite_create_image(vg_lite_buffer_t *image,
-                                     int width,
-                                     int height,
-                                     vg_lite_buffer_format_t fmt,
-                                     bool tiled);
-
-/****************************************************************************
- * Name: vg_lite_delete_image
- ****************************************************************************/
-
-void vg_lite_delete_image(vg_lite_buffer_t *image);
-
-/****************************************************************************
- * Name: vg_lite_bpp_to_format
- ****************************************************************************/
-
-vg_lite_buffer_format_t vg_lite_bpp_to_format(int bpp);
-
-/****************************************************************************
- * Name: vg_lite_get_format_bytes
- ****************************************************************************/
-
-void vg_lite_get_format_bytes(vg_lite_buffer_format_t format,
-                              uint32_t *mul,
-                              uint32_t *div,
-                              uint32_t *bytes_align);
-
-/****************************************************************************
- * Name: vg_lite_init_custon_buffer
- ****************************************************************************/
-
-vg_lite_error_t vg_lite_init_custom_buffer(
-  vg_lite_buffer_t *buffer,
-  void *ptr,
-  int32_t width,
-  int32_t height,
-  vg_lite_buffer_format_t format);
-
-/****************************************************************************
- * Name: vg_lite_init_matrix
- ****************************************************************************/
-
-vg_lite_matrix_t vg_lite_init_matrix(float x, float y,
-                                     float angle, float scale,
-                                     int pivot_x, int pivot_y);
-
-/****************************************************************************
- * Name: vg_lite_get_coord_format_size
- ****************************************************************************/
-
-size_t vg_lite_get_coord_format_size(vg_lite_format_t format);
-
-/****************************************************************************
- * Name: vg_lite_fill_round_rect_path
- ****************************************************************************/
-
-int vg_lite_fill_round_rect_path(
-  int32_t *path,
-  const struct vg_lite_area_s *rect,
-  uint16_t radius);
-
-/****************************************************************************
- * Name: vg_lite_test_report_start
- ****************************************************************************/
-
-void vg_lite_test_report_start(struct gpu_test_context_s *ctx);
-
-/****************************************************************************
- * Name: vg_lite_test_report_finish
- ****************************************************************************/
-
-void vg_lite_test_report_finish(struct gpu_test_context_s *ctx);
-
-/****************************************************************************
- * Name: vg_lite_test_report_write
- ****************************************************************************/
-
-void vg_lite_test_report_write(struct gpu_test_context_s *ctx,
-                               const char *testcase_str,
-                               const char *instructions_str,
-                               const char *remark_str,
-                               bool is_passed);
+/**********************
+ *      MACROS
+ **********************/
 
 #ifdef __cplusplus
-}
+} /*extern "C"*/
 #endif
 
-#endif /* __APPS_TESTING_GPU_VG_LITE_VG_LITE_TEST_UTILS_H */
+#endif /*VG_LITE_TEST_UTILS_H*/

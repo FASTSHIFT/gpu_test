@@ -30,6 +30,7 @@
 #include "gpu_log.h"
 #include "gpu_utils.h"
 #include <stdlib.h>
+#include <string.h>
 
 /*********************
  *      DEFINES
@@ -75,10 +76,12 @@ struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, int width,
 
     buffer->data_unaligned = calloc(1, stride * height + GPU_BUF_ALIGN);
     GPU_ASSERT_NULL(buffer->data_unaligned);
-    buffer->data = GPU_ALIGN(buffer->data_unaligned, GPU_BUF_ALIGN);
+    buffer->data = (void*)GPU_ALIGN(buffer->data_unaligned, GPU_BUF_ALIGN);
 
     GPU_LOG_INFO("Allocated buffer %p, format %d, size W%dxH%d, stride %d, data %p",
         buffer, format, width, height, stride, buffer->data);
+
+    return buffer;
 }
 
 void gpu_buffer_free(struct gpu_buffer_s* buffer)

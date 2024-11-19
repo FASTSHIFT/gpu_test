@@ -32,6 +32,7 @@
 #include "gpu_utils.h"
 #include <png.h>
 #include <stdio.h>
+#include <string.h>
 
 /**********************
  *      TYPEDEFS
@@ -61,16 +62,12 @@ int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffe
     GPU_ASSERT_NULL(name);
     GPU_ASSERT_NULL(buffer);
 
-    int retval;
-    char path[256];
-    char time_str[64];
-
     GPU_LOG_INFO("Taking screenshot of '%s' ...", name);
 
-    gpu_get_localtime_str(time_str, sizeof(time_str));
-    snprintf(path, sizeof(path), "%s/screenshot_%s_%s.png", dirpath, name, time_str);
+    char path[256];
+    snprintf(path, sizeof(path), "%s/screenshot_%s_%s.png", dirpath, name, gpu_get_localtime_str());
 
-    retval = save_img_file(buffer, path);
+    int retval = save_buffer_to_file(buffer, path);
 
     if (retval > 0) {
         GPU_LOG_INFO("Screenshot saved to %s", path);
@@ -85,7 +82,7 @@ int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffe
  *   STATIC FUNCTIONS
  **********************/
 
-static int save_img_file(struct gpu_test_context_s* ctx, const char* path)
+static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* path)
 {
     png_image image;
     int retval;
@@ -95,13 +92,27 @@ static int save_img_file(struct gpu_test_context_s* ctx, const char* path)
     memset(&image, 0, sizeof(image));
 
     image.version = PNG_IMAGE_VERSION;
-    image.width = ctx->xres;
-    image.height = ctx->yres;
-    image.format = PNG_FORMAT_BGRA;
+    image.width = buffer->width;
+    image.height = buffer->height;
+
+    switch (buffer->format) {
+    case GPU_COLOR_FORMAT_BGR888:
+        image.format = PNG_FORMAT_BGR;
+        break;
+
+    case GPU_COLOR_FORMAT_BGRA8888:
+    case GPU_COLOR_FORMAT_BGRX8888:
+        image.format = PNG_FORMAT_BGRA;
+        break;
+
+    default:
+        GPU_LOG_ERROR("Unsupported color format: %d", buffer->format);
+        return -1;
+    }
 
     /* Write the PNG image. */
 
-    retval = png_image_write_to_file(&image, path, 0, ctx->fbmem, ctx->stride, NULL);
+    retval = png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL);
 
     return retval;
 }

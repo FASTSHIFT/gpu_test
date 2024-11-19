@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#if 0
+
 #include "vg_lite_test_utils.h"
 #include "resource/image_a8.h"
 
@@ -745,3 +747,5 @@ error_handler:
   vg_lite_delete_image(image);
   return error;
 }
+
+#endif

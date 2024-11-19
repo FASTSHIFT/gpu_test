@@ -28,6 +28,7 @@
 #include "gpu_context.h"
 #include "gpu_log.h"
 #include "gpu_test.h"
+#include "gpu_utils.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,6 +49,8 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
+
+static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* param);
 
 /**********************
  *  STATIC VARIABLES
@@ -164,11 +167,15 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
             param->screenshot_en = true;
             break;
 
+        case 'h':
+            show_usage(argv[0], EXIT_FAILURE);
+            break;
+
         case '?':
             GPU_LOG_WARN("Unknown option: %c", optopt);
-        case 'h':
+            break;
+
         default:
-            show_usage(argv[0], EXIT_FAILURE);
             break;
         }
     }

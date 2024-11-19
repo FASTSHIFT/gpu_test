@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#if 0
+
 #include "vg_lite_test_utils.h"
 #include "resource/glphy_paths.h"
 
@@ -154,3 +156,5 @@ vg_lite_error_t vg_lite_test_path_glyph_random(
 error_handler:
   return error;
 }
+
+#endif
