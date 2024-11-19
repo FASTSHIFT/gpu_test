@@ -43,11 +43,13 @@ extern "C" {
  **********************/
 
 typedef enum gpu_color_format_e {
+    GPU_COLOR_FORMAT_UNKNOWN,
     GPU_COLOR_FORMAT_BGR565,
     GPU_COLOR_FORMAT_BGR888,
     GPU_COLOR_FORMAT_BGRA8888,
     GPU_COLOR_FORMAT_BGRX8888,
     GPU_COLOR_FORMAT_BGRA5658,
+    GPU_COLOR_FORMAT_INDEX8,
 } gpu_color_format_t;
 
 #pragma pack(1)

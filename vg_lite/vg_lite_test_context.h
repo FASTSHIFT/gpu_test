@@ -38,17 +38,31 @@ extern "C" {
  *      DEFINES
  *********************/
 
-#define VG_LITE_TEST_CTX ((struct vg_lite_test_ctx_s*)((ctx)->user_data))
-#define VG_LITE_TEST_SRC_BUF (&(VG_LITE_TEST_CTX->src_buffer))
-#define VG_LITE_TEST_DEST_BUF (&(VG_LITE_TEST_CTX->dest_buffer))
+#define gcFEATURE_BIT_VG_NONE -1
+
+#define VG_LITE_TEST_CASE_ITEM_DEF(NAME, FEATURE)                \
+    struct vg_lite_test_item_s vg_lite_test_case_item_##NAME = { \
+        .name = #NAME,                                           \
+        .feature = gcFEATURE_BIT_VG_##FEATURE,                   \
+        .on_setup = on_setup,                                    \
+        .on_teardown = on_teardown,                              \
+    }
 
 /**********************
  *      TYPEDEFS
  **********************/
 
-struct vg_lite_test_ctx_s {
-    vg_lite_buffer_t src_buffer;
-    vg_lite_buffer_t dest_buffer;
+struct vg_lite_test_context_s {
+    vg_lite_buffer_t target_buffer;
+};
+
+typedef void (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ctx);
+
+struct vg_lite_test_item_s {
+    const char* name;
+    int feature;
+    vg_lite_test_func_t on_setup;
+    vg_lite_test_func_t on_teardown;
 };
 
 /**********************

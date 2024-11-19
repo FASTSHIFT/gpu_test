@@ -26,7 +26,11 @@
  *********************/
 
 #include "vg_lite_test_utils.h"
+#include "../gpu_assert.h"
+#include "../gpu_utils.h"
 #include <inttypes.h>
+#include <stdbool.h>
+#include <string.h>
 
 /*********************
  *      DEFINES
@@ -53,6 +57,14 @@
  **********************/
 
 static const char* vg_lite_test_feature_string(vg_lite_feature_t feature);
+
+static void vg_lite_test_buffer_format_bytes(
+    vg_lite_buffer_format_t format,
+    uint32_t* mul,
+    uint32_t* div,
+    uint32_t* bytes_align);
+
+static enum gpu_color_format_e vg_lite_test_vg_format_to_gpu_format(vg_lite_buffer_format_t format);
 
 /**********************
  *  STATIC VARIABLES
@@ -158,6 +170,55 @@ const char* vg_lite_test_error_string(vg_lite_error_t error)
     return "UNKNOW_ERROR";
 }
 
+void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_t height, vg_lite_buffer_format_t format, uint32_t stride)
+{
+    GPU_ASSERT_NULL(buffer);
+    if (vg_lite_query_feature(gcFEATURE_BIT_VG_16PIXELS_ALIGN)) {
+        width = GPU_ALIGN_UP(width, 16);
+    }
+
+    if (stride == VG_LITE_TEST_STRIDE_AUTO) {
+        uint32_t mul, div, align;
+        vg_lite_test_buffer_format_bytes(format, &mul, &div, &align);
+
+        stride = GPU_ALIGN_UP(((width * mul + div - 1) / div), align);
+    }
+
+    struct gpu_buffer_s* gpu_buffer = gpu_buffer_alloc(
+        width, height, stride, 64, vg_lite_test_vg_format_to_gpu_format(format));
+
+    memset(buffer, 0, sizeof(vg_lite_buffer_t));
+    buffer->memory = gpu_buffer->data;
+    buffer->width = width;
+    buffer->height = height;
+    buffer->format = format;
+    buffer->stride = stride;
+    buffer->handle = gpu_buffer;
+}
+
+void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer)
+{
+    GPU_ASSERT_NULL(buffer);
+    GPU_ASSERT_NULL(buffer->handle);
+
+    struct gpu_buffer_s* gpu_buffer = buffer->handle;
+    gpu_buffer_free(gpu_buffer);
+    memset(buffer, 0, sizeof(vg_lite_buffer_t));
+}
+
+void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const vg_lite_buffer_t* vg_buffer)
+{
+    GPU_ASSERT_NULL(gpu_buffer);
+    GPU_ASSERT_NULL(vg_buffer);
+
+    memset(gpu_buffer, 0, sizeof(struct gpu_buffer_s));
+    gpu_buffer->data = vg_buffer->memory;
+    gpu_buffer->width = vg_buffer->width;
+    gpu_buffer->height = vg_buffer->height;
+    gpu_buffer->stride = vg_buffer->stride;
+    gpu_buffer->format = vg_lite_test_vg_format_to_gpu_format(vg_buffer->format);
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/
@@ -215,4 +276,115 @@ static const char* vg_lite_test_feature_string(vg_lite_feature_t feature)
         break;
     }
     return "UNKNOW_FEATURE";
+}
+
+static void vg_lite_test_buffer_format_bytes(
+    vg_lite_buffer_format_t format,
+    uint32_t* mul,
+    uint32_t* div,
+    uint32_t* bytes_align)
+{
+    /* Get the bpp information of a color format. */
+    *mul = *div = 1;
+    *bytes_align = 4;
+    switch (format) {
+    case VG_LITE_L8:
+    case VG_LITE_A8:
+    case VG_LITE_RGBA8888_ETC2_EAC:
+        break;
+    case VG_LITE_A4:
+        *div = 2;
+        break;
+    case VG_LITE_ABGR1555:
+    case VG_LITE_ARGB1555:
+    case VG_LITE_BGRA5551:
+    case VG_LITE_RGBA5551:
+    case VG_LITE_RGBA4444:
+    case VG_LITE_BGRA4444:
+    case VG_LITE_ABGR4444:
+    case VG_LITE_ARGB4444:
+    case VG_LITE_RGB565:
+    case VG_LITE_BGR565:
+    case VG_LITE_YUYV:
+    case VG_LITE_YUY2:
+    case VG_LITE_YUY2_TILED:
+    /* AYUY2 buffer memory = YUY2 + alpha. */
+    case VG_LITE_AYUY2:
+    case VG_LITE_AYUY2_TILED:
+        *mul = 2;
+        break;
+    case VG_LITE_RGBA8888:
+    case VG_LITE_BGRA8888:
+    case VG_LITE_ABGR8888:
+    case VG_LITE_ARGB8888:
+    case VG_LITE_RGBX8888:
+    case VG_LITE_BGRX8888:
+    case VG_LITE_XBGR8888:
+    case VG_LITE_XRGB8888:
+        *mul = 4;
+        break;
+    case VG_LITE_NV12:
+    case VG_LITE_NV12_TILED:
+        *mul = 1;
+        break;
+    case VG_LITE_ANV12:
+    case VG_LITE_ANV12_TILED:
+        *mul = 4;
+        break;
+    case VG_LITE_INDEX_1:
+        *div = 8;
+        *bytes_align = 8;
+        break;
+    case VG_LITE_INDEX_2:
+        *div = 4;
+        *bytes_align = 8;
+        break;
+    case VG_LITE_INDEX_4:
+        *div = 2;
+        *bytes_align = 8;
+        break;
+    case VG_LITE_INDEX_8:
+        *bytes_align = 1;
+        break;
+    case VG_LITE_RGBA2222:
+    case VG_LITE_BGRA2222:
+    case VG_LITE_ABGR2222:
+    case VG_LITE_ARGB2222:
+        *mul = 1;
+        break;
+    case VG_LITE_RGB888:
+    case VG_LITE_BGR888:
+    case VG_LITE_ABGR8565:
+    case VG_LITE_BGRA5658:
+    case VG_LITE_ARGB8565:
+    case VG_LITE_RGBA5658:
+        *mul = 3;
+        break;
+    default:
+        GPU_LOG_ERROR("unsupport color format: 0x%" PRIx32, (uint32_t)format);
+        GPU_ASSERT(false);
+        break;
+    }
+}
+
+static enum gpu_color_format_e vg_lite_test_vg_format_to_gpu_format(vg_lite_buffer_format_t format)
+{
+#define COLOR_FORMAT_MATCH(FMT) \
+    case VG_LITE_##FMT:         \
+        return GPU_COLOR_FORMAT_##FMT;
+
+    switch (format) {
+        COLOR_FORMAT_MATCH(BGR565);
+        COLOR_FORMAT_MATCH(BGR888);
+        COLOR_FORMAT_MATCH(BGRA8888);
+        COLOR_FORMAT_MATCH(BGRX8888);
+        COLOR_FORMAT_MATCH(BGRA5658);
+
+    default:
+        break;
+    }
+
+#undef COLOR_FORMAT_MATCH
+
+    return GPU_COLOR_FORMAT_UNKNOWN;
 }

@@ -42,7 +42,7 @@ extern "C" {
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
 
-#define GPU_ALIGN(number, align_bytes) \
+#define GPU_ALIGN_UP(number, align_bytes) \
     ((((uintptr_t)number) + ((align_bytes) - 1)) & ~((align_bytes) - 1))
 
 /**********************

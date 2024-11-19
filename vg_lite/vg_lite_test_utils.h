@@ -28,6 +28,7 @@
  *      INCLUDES
  *********************/
 
+#include "../gpu_buffer.h"
 #include "../gpu_log.h"
 #include <vg_lite.h>
 
@@ -45,9 +46,10 @@ extern "C" {
         if (error != VG_LITE_SUCCESS) {                                 \
             GPU_LOG_ERROR("Execute '" #func "' error: %d", (int)error); \
             vg_lite_test_error_dump_info(error);                        \
-            goto error_handler;                                         \
         }                                                               \
     } while (0)
+
+#define VG_LITE_TEST_STRIDE_AUTO 0
 
 /**********************
  *      TYPEDEFS
@@ -74,6 +76,29 @@ const char* vg_lite_test_error_string(vg_lite_error_t error);
  * @param error The error code.
  */
 void vg_lite_test_error_dump_info(vg_lite_error_t error);
+
+/**
+ * @brief Allocate a GPU buffer for VG Lite.
+ * @param buffer The VG Lite buffer to be allocated.
+ * @param width The width of the buffer.
+ * @param height The height of the buffer.
+ * @param format The format of the buffer.
+ * @param stride The stride of the buffer. If it is VG_LITE_TEST_STRIDE_AUTO, the stride will be calculated automatically.
+ */
+void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_t height, vg_lite_buffer_format_t format, uint32_t stride);
+
+/**
+ * @brief Free a GPU buffer for VG Lite.
+ * @param buffer The VG Lite buffer to be freed.
+ */
+void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer);
+
+/**
+ * @brief Copy a VG Lite buffer to a GPU buffer.
+ * @param gpu_buffer The GPU buffer to be copied.
+ * @param vg_buffer The VG Lite buffer to be copied.
+ */
+void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const vg_lite_buffer_t* vg_buffer);
 
 /**********************
  *      MACROS

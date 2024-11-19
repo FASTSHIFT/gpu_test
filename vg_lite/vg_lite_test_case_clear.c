@@ -21,19 +21,12 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_CONTEXT_H
-#define GPU_CONTEXT_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*********************
  *      INCLUDES
  *********************/
 
-#include "gpu_buffer.h"
-#include <stdbool.h>
+#include "vg_lite_test_context.h"
+#include "vg_lite_test_utils.h"
 
 /*********************
  *      DEFINES
@@ -43,37 +36,53 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
-
-enum gpu_test_mode_e {
-    GPU_TEST_MODE_DEFAULT = 0,
-    GPU_TEST_MODE_STRESS,
-};
-
-struct gpu_test_param_s {
-    enum gpu_test_mode_e mode;
-    const char* output_dir;
-    const char* testcase_name;
-    int img_width;
-    int img_height;
-    bool screenshot_en;
-};
-
-struct gpu_test_context_s {
-    struct gpu_recorder_s* recorder;
-    struct gpu_test_param_s param;
-};
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
 
 /**********************
- * GLOBAL PROTOTYPES
+ *  STATIC VARIABLES
  **********************/
 
 /**********************
  *      MACROS
  **********************/
 
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
 
-#endif /*GPU_CONTEXT_H*/
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
+
+static void on_setup(struct vg_lite_test_context_s* ctx)
+{
+    vg_lite_rectangle_t rect = { 0, 0, ctx->target_buffer.width, ctx->target_buffer.height };
+
+    /* White */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFFFFFF));
+
+    /* Red */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFF0000));
+
+    /* Green */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF00FF00));
+
+    /* Blue */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF0000FF));
+}
+
+static void on_teardown(struct vg_lite_test_context_s* ctx)
+{
+}
+
+VG_LITE_TEST_CASE_ITEM_DEF(clear, NONE);

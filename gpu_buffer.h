@@ -44,9 +44,9 @@ extern "C" {
 
 struct gpu_buffer_s {
     enum gpu_color_format_e format;
-    int width;
-    int height;
-    int stride;
+    uint32_t width;
+    uint32_t height;
+    uint32_t stride;
     void* data;
     void* data_unaligned;
 };
@@ -58,13 +58,14 @@ struct gpu_buffer_s {
 /**
  * Allocate a new GPU buffer with the given format, width, height, and stride.
  * The buffer will be initialized with zeros.
- * @param format The color format of the buffer.
  * @param width The width of the buffer in pixels.
  * @param height The height of the buffer in pixels.
+ * @param format The color format of the buffer.
  * @param stride The stride of the buffer in bytes.
+ * @param align The alignment of the start address of the buffer.
  * @return A pointer to the new GPU buffer, or NULL if there was an error.
  */
-struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, int width, int height, int stride);
+struct gpu_buffer_s* gpu_buffer_alloc(uint32_t width, uint32_t height, enum gpu_color_format_e format, uint32_t stride, uint32_t align);
 
 /**
  * Free a GPU buffer.

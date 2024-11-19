@@ -36,10 +36,6 @@
  *      DEFINES
  *********************/
 
-#ifndef GPU_BUF_ALIGN
-#define GPU_BUF_ALIGN 64
-#endif
-
 /**********************
  *      TYPEDEFS
  **********************/
@@ -60,7 +56,7 @@
  *   GLOBAL FUNCTIONS
  **********************/
 
-struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, int width, int height, int stride)
+struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, uint32_t width, uint32_t height, uint32_t stride, uint32_t align)
 {
     GPU_ASSERT(width > 0);
     GPU_ASSERT(height > 0);
@@ -74,9 +70,9 @@ struct gpu_buffer_s* gpu_buffer_alloc(enum gpu_color_format_e format, int width,
     buffer->height = height;
     buffer->stride = stride;
 
-    buffer->data_unaligned = calloc(1, stride * height + GPU_BUF_ALIGN);
+    buffer->data_unaligned = calloc(1, stride * height + align);
     GPU_ASSERT_NULL(buffer->data_unaligned);
-    buffer->data = (void*)GPU_ALIGN(buffer->data_unaligned, GPU_BUF_ALIGN);
+    buffer->data = (void*)GPU_ALIGN_UP(buffer->data_unaligned, align);
 
     GPU_LOG_INFO("Allocated buffer %p, format %d, size W%dxH%d, stride %d, data %p",
         buffer, format, width, height, stride, buffer->data);

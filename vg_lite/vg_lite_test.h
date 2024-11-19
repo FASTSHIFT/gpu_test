@@ -46,7 +46,7 @@ struct gpu_test_context_s;
  * GLOBAL PROTOTYPES
  **********************/
 
-int vg_lite_test(struct gpu_test_context_s* ctx);
+int vg_lite_test_run(struct gpu_test_context_s* ctx);
 
 /**********************
  *      MACROS
