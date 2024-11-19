@@ -56,33 +56,36 @@
  *   STATIC FUNCTIONS
  **********************/
 
-static void on_setup(struct vg_lite_test_context_s* ctx)
+static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_rectangle_t rect = { 0, 0, ctx->target_buffer.width, ctx->target_buffer.height };
 
     /* White */
     rect.width /= 2;
     rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFFFFFF));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFFFFFF));
 
     /* Red */
     rect.width /= 2;
     rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFF0000));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFF0000));
 
     /* Green */
     rect.width /= 2;
     rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF00FF00));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF00FF00));
 
     /* Blue */
     rect.width /= 2;
     rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF0000FF));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF0000FF));
+
+    return VG_LITE_SUCCESS;
 }
 
-static void on_teardown(struct vg_lite_test_context_s* ctx)
+static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
 {
+    return VG_LITE_SUCCESS;
 }
 
 VG_LITE_TEST_CASE_ITEM_DEF(clear, NONE);

@@ -105,10 +105,7 @@ int vg_lite_test_run(struct gpu_test_context_s* ctx)
  *   STATIC FUNCTIONS
  **********************/
 
-static void vg_lite_test_run_item(
-    struct gpu_test_context_s* gpu_ctx,
-    struct vg_lite_test_context_s* vg_lite_ctx,
-    const struct vg_lite_test_item_s* item)
+static void vg_lite_test_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item)
 {
     if (!vg_lite_query_feature(item->feature)) {
         return;
@@ -117,29 +114,29 @@ static void vg_lite_test_run_item(
     GPU_LOG_INFO("Running test case: %s", item->name);
 
     /* Clear the target buffer */
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&vg_lite_ctx->target_buffer, NULL, 0));
+    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, NULL, 0));
     VG_LITE_TEST_CHECK_ERROR(vg_lite_finish());
 
-    uint32_t preapre_start_tick = gpu_tick_get();
+    uint32_t render_tick = 0;
+    uint32_t preapre_tick = gpu_tick_get();
 
     /* Run test case */
-    item->on_setup(vg_lite_ctx);
+    vg_lite_error_t error = item->on_setup(ctx);
 
-    uint32_t preapre_elapsed_tick = gpu_tick_elaps(preapre_start_tick);
+    preapre_tick = gpu_tick_elaps(preapre_tick);
 
-    uint32_t render_start_tick = gpu_tick_get();
+    if (error == VG_LITE_SUCCESS) {
+        render_tick = gpu_tick_get();
+        error = vg_lite_finish();
+        render_tick = gpu_tick_elaps(render_tick);
+    }
 
-    /* Render */
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_finish());
+    item->on_teardown(ctx);
 
-    uint32_t render_elapsed_tick = gpu_tick_elaps(render_start_tick);
-
-    item->on_teardown(vg_lite_ctx);
-
-    if (gpu_ctx->param.screenshot_en) {
+    if (ctx->gpu_ctx->param.screenshot_en) {
         struct gpu_buffer_s screenshot_buffer;
-        vg_lite_test_vg_buffer_to_gpu_buffer(&screenshot_buffer, &vg_lite_ctx->target_buffer);
-        gpu_screenshot(gpu_ctx->param.output_dir, item->name, &screenshot_buffer);
+        vg_lite_test_vg_buffer_to_gpu_buffer(&screenshot_buffer, &ctx->target_buffer);
+        gpu_screenshot(ctx->gpu_ctx->param.output_dir, item->name, &screenshot_buffer);
     }
 }
 
@@ -158,16 +155,12 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
 #undef ITEM_DEF
 
     struct vg_lite_test_context_s vg_lite_ctx = { 0 };
-    vg_lite_test_buffer_alloc(
-        &vg_lite_ctx.target_buffer,
-        ctx->param.img_width,
-        ctx->param.img_height,
-        VG_LITE_BGRA8888,
-        VG_LITE_TEST_STRIDE_AUTO);
+    vg_lite_ctx.gpu_ctx = ctx;
+    vg_lite_test_context_setup(&vg_lite_ctx);
 
     for (size_t i = 0; i < sizeof(vg_lite_test_group) / sizeof(vg_lite_test_group[0]); i++) {
-        vg_lite_test_run_item(ctx, &vg_lite_ctx, vg_lite_test_group[i]);
+        vg_lite_test_run_item(&vg_lite_ctx, vg_lite_test_group[i]);
     }
 
-    vg_lite_test_buffer_free(&vg_lite_ctx.target_buffer);
+    vg_lite_test_context_teardown(&vg_lite_ctx);
 }

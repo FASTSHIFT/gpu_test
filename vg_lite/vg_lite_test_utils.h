@@ -40,13 +40,23 @@ extern "C" {
  *      DEFINES
  *********************/
 
-#define VG_LITE_TEST_CHECK_ERROR(func)                                  \
-    do {                                                                \
-        vg_lite_error_t error = func;                                   \
-        if (error != VG_LITE_SUCCESS) {                                 \
-            GPU_LOG_ERROR("Execute '" #func "' error: %d", (int)error); \
-            vg_lite_test_error_dump_info(error);                        \
-        }                                                               \
+#define VG_LITE_TEST_CHECK_ERROR(func)                                \
+    do {                                                              \
+        vg_lite_error_t err = func;                                   \
+        if (err != VG_LITE_SUCCESS) {                                 \
+            GPU_LOG_ERROR("Execute '" #func "' error: %d", (int)err); \
+            vg_lite_test_error_dump_info(err);                        \
+        }                                                             \
+    } while (0)
+
+#define VG_LITE_TEST_CHECK_ERROR_RETURN(func)                         \
+    do {                                                              \
+        vg_lite_error_t err = func;                                   \
+        if (err != VG_LITE_SUCCESS) {                                 \
+            GPU_LOG_ERROR("Execute '" #func "' error: %d", (int)err); \
+            vg_lite_test_error_dump_info(err);                        \
+            return err;                                               \
+        }                                                             \
     } while (0)
 
 #define VG_LITE_TEST_STRIDE_AUTO 0

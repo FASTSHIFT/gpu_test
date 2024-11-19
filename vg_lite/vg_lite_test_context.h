@@ -52,11 +52,14 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
+struct gpu_test_context_s;
+
 struct vg_lite_test_context_s {
+    struct gpu_test_context_s* gpu_ctx;
     vg_lite_buffer_t target_buffer;
 };
 
-typedef void (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ctx);
+typedef vg_lite_error_t (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ctx);
 
 struct vg_lite_test_item_s {
     const char* name;
@@ -68,6 +71,18 @@ struct vg_lite_test_item_s {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+
+/**
+ * @brief Initialize the test context
+ * @param ctx The test context to initialize
+ */
+void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx);
+
+/**
+ * @brief Run a test case
+ * @param ctx The test context to use
+ */
+void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx);
 
 /**********************
  *      MACROS

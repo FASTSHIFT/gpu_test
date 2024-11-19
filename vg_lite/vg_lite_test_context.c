@@ -26,6 +26,7 @@
  *********************/
 
 #include "vg_lite_test_context.h"
+#include "../gpu_context.h"
 #include "vg_lite_test_utils.h"
 
 /*********************
@@ -52,18 +53,21 @@
  *   GLOBAL FUNCTIONS
  **********************/
 
+void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx)
+{
+    vg_lite_test_buffer_alloc(
+        &ctx->target_buffer,
+        ctx->gpu_ctx->param.img_width,
+        ctx->gpu_ctx->param.img_height,
+        VG_LITE_BGRA8888,
+        VG_LITE_TEST_STRIDE_AUTO);
+}
+
+void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx)
+{
+    vg_lite_test_buffer_free(&ctx->target_buffer);
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/
-
-static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
-{
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
-{
-    return VG_LITE_SUCCESS;
-}
-
-VG_LITE_TEST_CASE_ITEM_DEF(template, NONE);
