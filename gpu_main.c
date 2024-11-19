@@ -1,218 +1,181 @@
-/****************************************************************************
- * apps/testing/gpu/gpu_main.c
+/*
+ * MIT License
+ * Copyright (c) 2023 - 2024 _VIFEXTech
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+/*********************
+ *      INCLUDES
+ *********************/
 
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <unistd.h>
+#include "gpu_context.h"
+#include "gpu_log.h"
+#include "gpu_test.h"
+#include <getopt.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <poll.h>
 
-#include "gpu_test.h"
+/*********************
+ *      DEFINES
+ *********************/
 
-/****************************************************************************
- * Preprocessor Definitions
- ****************************************************************************/
+#ifndef GPU_OUTPUT_DIR_DEFAULT
+#define GPU_OUTPUT_DIR_DEFAULT "./gpu"
+#endif
 
-#define GPU_PREFIX "GPU: "
+/**********************
+ *      TYPEDEFS
+ **********************/
 
-#define OPTARG_TO_VALUE(value, type, base)                             \
-  do                                                                   \
-  {                                                                    \
-    char *ptr;                                                     \
-    value = (type)strtoul(optarg, &ptr, base);                         \
-    if (*ptr != '\0')                                                  \
-      {                                                                \
-        printf(GPU_PREFIX "Parameter error: -%c %s\n", ch, optarg); \
-        show_usage(argv[0], EXIT_FAILURE);                             \
-      }                                                                \
-  } while (0)
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
 
-/****************************************************************************
- * Private Types
- ****************************************************************************/
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 
-/****************************************************************************
- * Private Data
- ****************************************************************************/
+/**********************
+ *      MACROS
+ **********************/
 
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
 
-/****************************************************************************
- * Name: show_usage
- ****************************************************************************/
-
-static void show_usage(const char *progname, int exitcode)
+int main(int argc, char* argv[])
 {
-  printf("\nUsage: %s"
-         " -o <string> -m <string> -i <string> -s\n",
-         progname);
-  printf("\nWhere:\n");
-  printf("  -o <string> GPU report file output path.\n");
-  printf("  -m <string> Test mode: default; random; stress.\n");
-  printf("  -i <string> Test image size(px): "
-         "<decimal-value width>x<decimal-value height>\n");
-  printf("  -s Enable screenshot\n");
-
-  exit(exitcode);
+    struct gpu_test_context_s ctx = { 0 };
+    parse_commandline(argc, argv, &ctx.param);
+    gpu_dir_create(ctx.param.output_dir);
+    return gpu_test_run(&ctx);
 }
 
-/****************************************************************************
- * Name: gpu_test_string_to_mode
- ****************************************************************************/
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
 
-static enum gpu_test_mode_e gpu_test_string_to_mode(const char *str)
+/**
+ * @brief Show usage of the program
+ * @param progname The name of the program
+ * @param exitcode The exit code of the program
+ */
+static void show_usage(const char* progname, int exitcode)
 {
-  if (strcmp(str, "default") == 0)
-    {
-      return GPU_TEST_MODE_DEFAULT;
-    }
-  else if (strcmp(str, "random") == 0)
-    {
-      return GPU_TEST_MODE_RANDOM;
-    }
-  else if (strcmp(str, "stress") == 0)
-    {
-      return GPU_TEST_MODE_STRESS;
-    }
-  else if (strcmp(str, "stress_random") == 0)
-    {
-      return GPU_TEST_MODE_STRESS_RANDOM;
-    }
+    printf("\nUsage: %s"
+           "-m <string> -o <string> -t <string> -i <string> -s\n",
+        progname);
+    printf("\nWhere:\n");
+    printf("  -m <string> Test mode: default; stress.\n");
+    printf("  -o <string> GPU report file output path, default is " GPU_OUTPUT_DIR_DEFAULT "\n");
+    printf("  -t <string> Testcase name.\n");
+    printf("  -i <string> Test image size(px), default is 480x480. Example: "
+           "<decimal-value width>x<decimal-value height>\n");
+    printf("  -s Enable screenshot.\n");
 
-  printf(GPU_PREFIX "Unknown mode: %s\n", str);
-
-  return GPU_TEST_MODE_DEFAULT;
+    exit(exitcode);
 }
 
-/****************************************************************************
- * Name: parse_commandline
- ****************************************************************************/
-
-static void parse_commandline(int argc, char **argv,
-                              struct gpu_test_param_s *param)
+/**
+ * @brief Convert string to test mode
+ * @param str The string to convert
+ * @return The test mode
+ */
+static enum gpu_test_mode_e gpu_test_string_to_mode(const char* str)
 {
-  int ch;
-  int converted;
+#define GPU_TEST_MODE_NAME_MATCH(name, mode) \
+    do {                                     \
+        if (strcmp(str, name) == 0) {        \
+            return mode;                     \
+        }                                    \
+    } while (0)
 
-  /* set default param */
+    GPU_TEST_MODE_NAME_MATCH("default", GPU_TEST_MODE_DEFAULT);
+    GPU_TEST_MODE_NAME_MATCH("stress", GPU_TEST_MODE_STRESS);
 
-  memset(param, 0, sizeof(struct gpu_test_param_s));
-  param->output_dir = "/data/gpu";
-  param->mode = GPU_TEST_MODE_DEFAULT;
-  param->img_width = 128;
-  param->img_height = 128;
+#undef GPU_TEST_MODE_NAME_MATCH
 
-  while ((ch = getopt(argc, argv, "ho:m:i:sc:")) != -1)
-    {
-      switch (ch)
-        {
-          case 'o':
-            param->output_dir = optarg;
-            break;
+    GPU_LOG_WARN("Unknown mode: %s, use default mode", str);
+    return GPU_TEST_MODE_DEFAULT;
+}
 
-          case 'm':
+/**
+ * @brief Parse command line arguments
+ * @param argc The number of arguments
+ * @param argv The arguments
+ * @param param The test parameters
+ */
+static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* param)
+{
+    /* set default param */
+    memset(param, 0, sizeof(struct gpu_test_param_s));
+    param->mode = GPU_TEST_MODE_DEFAULT;
+    param->output_dir = GPU_OUTPUT_DIR_DEFAULT;
+    param->img_width = 480;
+    param->img_height = 480;
+
+    int ch;
+    while ((ch = getopt(argc, argv, "m:t:o:i:sh")) != -1) {
+        switch (ch) {
+        case 'm':
             param->mode = gpu_test_string_to_mode(optarg);
             break;
 
-          case 'i':
-          {
-            int width;
-            int height;
-            converted = sscanf(optarg, "%dx%d", &width, &height);
-            if (converted == 2 && width >= 0 && height >= 0)
-              {
+        case 'o':
+            param->output_dir = optarg;
+            break;
+
+        case 't':
+            param->testcase_name = optarg;
+            break;
+
+        case 'i': {
+            int width = 0;
+            int height = 0;
+            int converted = sscanf(optarg, "%dx%d", &width, &height);
+            if (converted == 2 && width >= 0 && height >= 0) {
                 param->img_width = width;
                 param->img_height = height;
-              }
-            else
-              {
-                printf(GPU_PREFIX ": Error image size: %s\n", optarg);
+            } else {
+                GPU_LOG_ERROR("Error image size: %s", optarg);
                 show_usage(argv[0], EXIT_FAILURE);
-              }
-            break;
-          }
+            }
+        } break;
 
-          case 's':
+        case 's':
             param->screenshot_en = true;
             break;
 
-          case 'c':
-            param->test_case = atoi(optarg);
-            break;
-
-          case '?':
-            printf(GPU_PREFIX ": Unknown option: %c\n", optopt);
-          case 'h':
+        case '?':
+            GPU_LOG_WARN("Unknown option: %c", optopt);
+        case 'h':
+        default:
             show_usage(argv[0], EXIT_FAILURE);
             break;
         }
     }
 
-  printf(GPU_PREFIX "Output DIR: %s\n", param->output_dir);
-  printf(GPU_PREFIX "Test mode: %d\n", param->mode);
-  printf(GPU_PREFIX "Image size: %dx%d\n",
-         param->img_width,
-         param->img_height);
-  printf(GPU_PREFIX "Screenshot: %s\n",
-         param->screenshot_en ? "enable" : "disable");
-}
-
-/****************************************************************************
- * Name: gpu_fb_init
- ****************************************************************************/
-
-static int gpu_fb_init(struct fb_state_s *state, const char *path)
-{
-  return 0;
-}
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: gpu_main
- ****************************************************************************/
-
-int main(int argc, char *argv[])
-{
-  struct gpu_test_context_s ctx;
-  int ret;
-
-  memset(&ctx, 0, sizeof(ctx));
-  parse_commandline(argc, argv, &ctx.param);
-
-  gpu_dir_create(ctx.param.output_dir);
-
-  gpu_test_run(&ctx);
-
-  printf(GPU_PREFIX "Test finished\n");
-  return EXIT_SUCCESS;
+    GPU_LOG_INFO("Test mode: %d", param->mode);
+    GPU_LOG_INFO("Output DIR: %s", param->output_dir);
+    GPU_LOG_INFO("Image size: %dx%d", param->img_width, param->img_height);
+    GPU_LOG_INFO("Testcase name: %s", param->testcase_name);
+    GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
 }

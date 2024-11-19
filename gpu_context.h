@@ -33,6 +33,7 @@ extern "C" {
  *********************/
 
 #include "gpu_buffer.h"
+#include <stdbool.h>
 
 /*********************
  *      DEFINES
@@ -52,8 +53,10 @@ enum gpu_test_mode_e {
 struct gpu_test_param_s {
     enum gpu_test_mode_e mode;
     const char* output_dir;
+    const char* testcase_name;
+    int img_width;
+    int img_height;
     bool screenshot_en;
-    int testcase_id;
 };
 
 struct gpu_test_context_s {
