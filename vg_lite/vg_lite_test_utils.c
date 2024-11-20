@@ -333,7 +333,7 @@ const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format)
         break;
     }
 
-    return "UNKNOW";
+    return "-";
 }
 
 void vg_lite_test_load_image(

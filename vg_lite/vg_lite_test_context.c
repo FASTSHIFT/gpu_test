@@ -69,9 +69,9 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx)
         gpu_recorder_write_string(ctx->gpu_ctx->recorder,
             "Testcase,"
             "Instructions,"
-            "Target Format,Src Format,"
-            "Target Address,Src Address,"
-            "Target Area,Src Area,"
+            "Target Format,Source Format,"
+            "Target Address,Source Address,"
+            "Target Area,Source Area,"
             "Prepare Time(ms),Finish Time(ms),"
             "Result,"
             "Remark"
