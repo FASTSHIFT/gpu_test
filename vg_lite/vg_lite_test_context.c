@@ -68,6 +68,7 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx)
     if (ctx->gpu_ctx->recorder) {
         gpu_recorder_write_string(ctx->gpu_ctx->recorder,
             "Testcase,"
+            "Instructions,"
             "Target Format,Src Format,"
             "Target Address,Src Address,"
             "Target Area,Src Area,"
@@ -81,13 +82,9 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx)
 void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_test_buffer_free(&ctx->target_buffer);
-
-    if (ctx->src_buffer.memory) {
-        vg_lite_test_buffer_free(&ctx->src_buffer);
-    }
 }
 
-void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx)
+void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
 {
     /* Clear the target buffer */
     size_t target_size = ctx->target_buffer.stride * ctx->target_buffer.height;
@@ -103,7 +100,7 @@ void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx)
     }
 }
 
-void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const char* testcase_str, vg_lite_error_t error)
+void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item, vg_lite_error_t error)
 {
     if (!ctx->gpu_ctx->recorder) {
         return;
@@ -112,6 +109,7 @@ void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const char*
     char result[256];
     snprintf(result, sizeof(result),
         "%s,"
+        "%s,"
         "%s,%s,"
         "%p,%p,"
         "%dx%d,%dx%d,"
@@ -119,7 +117,8 @@ void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const char*
         "%0.3f,"
         "%s,"
         "%s\n",
-        testcase_str,
+        item->name,
+        item->instructions,
         vg_lite_test_buffer_format_string(ctx->target_buffer.format),
         vg_lite_test_buffer_format_string(ctx->src_buffer.format),
         ctx->target_buffer.memory,

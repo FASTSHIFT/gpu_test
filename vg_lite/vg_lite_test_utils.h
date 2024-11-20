@@ -82,6 +82,13 @@ void vg_lite_test_dump_info(void);
 const char* vg_lite_test_error_string(vg_lite_error_t error);
 
 /**
+ * @brief Get the feature string.
+ * @param feature The feature code.
+ * @return The feature string.
+ */
+const char* vg_lite_test_feature_string(vg_lite_feature_t feature);
+
+/**
  * @brief Dump error information.
  * @param error The error code.
  */

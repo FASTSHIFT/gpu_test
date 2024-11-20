@@ -108,12 +108,12 @@ int vg_lite_test_run(struct gpu_test_context_s* ctx)
 static void vg_lite_test_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item)
 {
     if (item->feature != gcFEATURE_BIT_VG_NONE && !vg_lite_query_feature(item->feature)) {
+        GPU_LOG_WARN("Skipping test case: %s (feature %s not supported)", item->name, vg_lite_test_feature_string(item->feature));
+        vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT);
         return;
     }
 
     GPU_LOG_INFO("Running test case: %s", item->name);
-
-    vg_lite_test_context_reset(ctx);
 
     uint32_t start_tick = gpu_tick_get();
     vg_lite_error_t error = item->on_setup(ctx);
@@ -133,13 +133,15 @@ static void vg_lite_test_run_item(struct vg_lite_test_context_s* ctx, const stru
         GPU_LOG_INFO("Test case %s PASS", item->name);
     }
 
-    vg_lite_test_context_record(ctx, item->name, error);
+    vg_lite_test_context_record(ctx, item, error);
 
     if (ctx->gpu_ctx->param.screenshot_en) {
         struct gpu_buffer_s screenshot_buffer;
         vg_lite_test_vg_buffer_to_gpu_buffer(&screenshot_buffer, &ctx->target_buffer);
         gpu_screenshot(ctx->gpu_ctx->param.output_dir, item->name, &screenshot_buffer);
     }
+
+    vg_lite_test_context_cleanup(ctx);
 }
 
 static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)

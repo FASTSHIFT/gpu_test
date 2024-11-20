@@ -40,9 +40,10 @@ extern "C" {
 
 #define gcFEATURE_BIT_VG_NONE -1
 
-#define VG_LITE_TEST_CASE_ITEM_DEF(NAME, FEATURE)                \
+#define VG_LITE_TEST_CASE_ITEM_DEF(NAME, FEATURE, INSTRUCTIONS)  \
     struct vg_lite_test_item_s vg_lite_test_case_item_##NAME = { \
         .name = #NAME,                                           \
+        .instructions = INSTRUCTIONS,                            \
         .feature = gcFEATURE_BIT_VG_##FEATURE,                   \
         .on_setup = on_setup,                                    \
         .on_teardown = on_teardown,                              \
@@ -68,6 +69,7 @@ typedef vg_lite_error_t (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ct
 
 struct vg_lite_test_item_s {
     const char* name;
+    const char* instructions;
     int feature;
     vg_lite_test_func_t on_setup;
     vg_lite_test_func_t on_teardown;
@@ -90,19 +92,19 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx);
 void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx);
 
 /**
- * @brief Reset the test context
+ * @brief Cleanup the test context
  * @param ctx The test context to reset
  * @note This function should be called after each test case to ensure a clean state for the next test case.
  */
-void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx);
+void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx);
 
 /**
  * @brief Record the test context
  * @param ctx The test context to record
- * @param testcase_str The name of the test case
+ * @param item The test case item that was run
  * @param error The error code of the test case
  */
-void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const char *testcase_str, vg_lite_error_t error);
+void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item, vg_lite_error_t error);
 
 /**********************
  *      MACROS
