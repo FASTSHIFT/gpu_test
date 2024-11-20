@@ -30,6 +30,7 @@
 #include "../gpu_recorder.h"
 #include "vg_lite_test_utils.h"
 #include <stdio.h>
+#include <string.h>
 
 /*********************
  *      DEFINES
@@ -89,8 +90,9 @@ void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx)
 void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx)
 {
     /* Clear the target buffer */
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_clear(&ctx->target_buffer, NULL, 0));
-    VG_LITE_TEST_CHECK_ERROR(vg_lite_finish());
+    size_t target_size = ctx->target_buffer.stride * ctx->target_buffer.height;
+    memset(ctx->target_buffer.memory, 0, target_size);
+
     ctx->remark_text[0] = '\0';
     ctx->prepare_tick = 0;
     ctx->render_tick = 0;
