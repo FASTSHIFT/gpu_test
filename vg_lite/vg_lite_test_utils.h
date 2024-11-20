@@ -118,6 +118,23 @@ void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const
 const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format);
 
 /**
+ * @breif Load an image to a VG Lite buffer.
+ * @param buffer The VG Lite buffer to be loaded.
+ * @param image_data The image data.
+ * @param width The width of the image.
+ * @param height The height of the image.
+ * @param format The format of the image.
+ * @param image_stride The stride of the image.
+ */
+void vg_lite_test_load_image(
+    vg_lite_buffer_t* buffer,
+    const void* image_data,
+    uint32_t width,
+    uint32_t height,
+    vg_lite_buffer_format_t format,
+    uint32_t image_stride);
+
+/**
  * @breif Flush the GPU command queue if GPU is idle.
  * @return VG_LITE_SUCCESS if the flush is successful, otherwise the error code.
  */

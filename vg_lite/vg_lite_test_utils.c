@@ -283,6 +283,29 @@ const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format)
     return "UNKNOW";
 }
 
+void vg_lite_test_load_image(
+    vg_lite_buffer_t* buffer,
+    const void* image_data,
+    uint32_t width,
+    uint32_t height,
+    vg_lite_buffer_format_t format,
+    uint32_t image_stride)
+{
+    vg_lite_test_buffer_alloc(buffer, width, height, format, VG_LITE_TEST_STRIDE_AUTO);
+
+    /* Check if the buffer is large enough to hold the image data. */
+    GPU_ASSERT((height * image_stride) <= (buffer->stride * buffer->height));
+
+    const uint8_t* src = image_data;
+    uint8_t* dest = buffer->memory;
+
+    for (uint32_t y = 0; y < height; y++) {
+        memcpy(dest, src, image_stride);
+        dest += buffer->stride;
+        src += image_stride;
+    }
+}
+
 vg_lite_error_t vg_lite_test_idle_flush(void)
 {
     vg_lite_uint32_t is_gpu_idle = 0;

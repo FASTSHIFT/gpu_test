@@ -1,7 +1,7 @@
 /* VG-Lite test item list */
 ITEM_DEF(clear)
 ITEM_DEF(path_tiger)
-//ITEM_DEF(blit,                  NONE)
+ITEM_DEF(blit)
 //ITEM_DEF(path_rect,             NONE)
 //ITEM_DEF(path_round_rect,       NONE)
 //ITEM_DEF(path_glyph,            NONE)
