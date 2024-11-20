@@ -56,6 +56,7 @@ struct gpu_test_param_s {
     const char* testcase_name;
     int img_width;
     int img_height;
+    int run_loop_count;
     bool screenshot_en;
 };
 

@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 static void show_usage(const char* progname, int exitcode)
 {
     printf("\nUsage: %s"
-           "-m <string> -o <string> -t <string> -i <string> -s\n",
+           "-m <string> -o <string> -t <string> -i <string> -s -c <int>\n",
         progname);
     printf("\nWhere:\n");
     printf("  -m <string> Test mode: default; stress.\n");
@@ -93,6 +93,7 @@ static void show_usage(const char* progname, int exitcode)
     printf("  -i <string> Test image size(px), default is 480x480. Example: "
            "<decimal-value width>x<decimal-value height>\n");
     printf("  -s Enable screenshot.\n");
+    printf("  -c <int> Stress mode loop count, default is 1000.\n");
 
     exit(exitcode);
 }
@@ -134,9 +135,10 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     param->output_dir = GPU_OUTPUT_DIR_DEFAULT;
     param->img_width = 480;
     param->img_height = 480;
+    param->run_loop_count = 1000;
 
     int ch;
-    while ((ch = getopt(argc, argv, "m:t:o:i:sh")) != -1) {
+    while ((ch = getopt(argc, argv, "m:t:o:i:sc:h")) != -1) {
         switch (ch) {
         case 'm':
             param->mode = gpu_test_string_to_mode(optarg);
@@ -167,6 +169,10 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
             param->screenshot_en = true;
             break;
 
+        case 'c':
+            param->run_loop_count = atoi(optarg);
+            break;
+
         case 'h':
             show_usage(argv[0], EXIT_FAILURE);
             break;
@@ -187,9 +193,15 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
         }
     }
 
+    if (param->run_loop_count <= 0) {
+        GPU_LOG_ERROR("Loop count should be greater than 0");
+        show_usage(argv[0], EXIT_FAILURE);
+    }
+
     GPU_LOG_INFO("Test mode: %d", param->mode);
     GPU_LOG_INFO("Output DIR: %s", param->output_dir);
     GPU_LOG_INFO("Image size: %dx%d", param->img_width, param->img_height);
     GPU_LOG_INFO("Testcase name: %s", param->testcase_name);
     GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
+    GPU_LOG_INFO("Loop count: %d", param->run_loop_count);
 }

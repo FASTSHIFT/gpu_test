@@ -28,7 +28,9 @@
 #include "gpu_test.h"
 #include "gpu_context.h"
 #include "gpu_recorder.h"
+#include "gpu_tick.h"
 #include "vg_lite/vg_lite_test.h"
+#include <stdlib.h>
 
 /*********************
  *      DEFINES
@@ -56,8 +58,18 @@
 
 int gpu_test_run(struct gpu_test_context_s* ctx)
 {
-    if (ctx->param.mode == GPU_TEST_MODE_DEFAULT) {
+    switch (ctx->param.mode) {
+    case GPU_TEST_MODE_DEFAULT:
         ctx->recorder = gpu_recorder_create(ctx->param.output_dir, "vg_lite");
+        break;
+
+    case GPU_TEST_MODE_STRESS:
+        /* Seed the random number generator with the current time */
+        srand(gpu_tick_get());
+        break;
+
+    default:
+        break;
     }
 
     int ret = vg_lite_test_run(ctx);
