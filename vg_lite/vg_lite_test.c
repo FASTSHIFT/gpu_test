@@ -122,7 +122,7 @@ static void vg_lite_test_run_item(struct vg_lite_test_context_s* ctx, const stru
     if (error == VG_LITE_SUCCESS) {
         start_tick = gpu_tick_get();
         error = vg_lite_finish();
-        ctx->render_tick = gpu_tick_elaps(start_tick);
+        ctx->finish_tick = gpu_tick_elaps(start_tick);
     }
 
     if (item->on_teardown) {

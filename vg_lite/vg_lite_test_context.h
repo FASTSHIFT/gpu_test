@@ -59,7 +59,7 @@ struct vg_lite_test_context_s {
     vg_lite_buffer_t target_buffer;
     vg_lite_buffer_t src_buffer;
     uint32_t prepare_tick;
-    uint32_t render_tick;
+    uint32_t finish_tick;
     char remark_text[128];
 };
 

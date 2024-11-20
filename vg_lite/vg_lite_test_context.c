@@ -71,7 +71,7 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx)
             "Target Format,Src Format,"
             "Target Address,Src Address,"
             "Target Area,Src Area,"
-            "Prepare Time(ms),Render Time(ms),"
+            "Prepare Time(ms),Finish Time(ms),"
             "Result,"
             "Remark"
             "\n");
@@ -95,7 +95,7 @@ void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx)
 
     ctx->remark_text[0] = '\0';
     ctx->prepare_tick = 0;
-    ctx->render_tick = 0;
+    ctx->finish_tick = 0;
 
     if (ctx->src_buffer.memory) {
         vg_lite_test_buffer_free(&ctx->src_buffer);
@@ -128,7 +128,7 @@ void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const char*
         (int)ctx->src_buffer.width,
         (int)ctx->src_buffer.height,
         ctx->prepare_tick / 1000.0f,
-        ctx->render_tick / 1000.0f,
+        ctx->finish_tick / 1000.0f,
         vg_lite_test_error_string(error),
         ctx->remark_text);
 
