@@ -96,6 +96,7 @@ void vg_lite_test_context_reset(struct vg_lite_test_context_s* ctx)
     ctx->remark_text[0] = '\0';
     ctx->prepare_tick = 0;
     ctx->finish_tick = 0;
+    ctx->user_data = NULL;
 
     if (ctx->src_buffer.memory) {
         vg_lite_test_buffer_free(&ctx->src_buffer);

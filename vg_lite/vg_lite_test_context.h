@@ -61,6 +61,7 @@ struct vg_lite_test_context_s {
     uint32_t prepare_tick;
     uint32_t finish_tick;
     char remark_text[128];
+    void* user_data;
 };
 
 typedef vg_lite_error_t (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ctx);
