@@ -87,8 +87,6 @@ const char* vg_lite_test_error_string(vg_lite_error_t error);
  */
 void vg_lite_test_error_dump_info(vg_lite_error_t error);
 
-
-
 /**
  * @brief Allocate a GPU buffer for VG Lite.
  * @param buffer The VG Lite buffer to be allocated.
@@ -118,6 +116,12 @@ void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const
  * @return The string of the VG Lite buffer format.
  */
 const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format);
+
+/**
+ * @breif Flush the GPU command queue if GPU is idle.
+ * @return VG_LITE_SUCCESS if the flush is successful, otherwise the error code.
+ */
+vg_lite_error_t vg_lite_test_idle_flush(void);
 
 /**********************
  *      MACROS

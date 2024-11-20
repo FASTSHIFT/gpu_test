@@ -283,6 +283,19 @@ const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format)
     return "UNKNOW";
 }
 
+vg_lite_error_t vg_lite_test_idle_flush(void)
+{
+    vg_lite_uint32_t is_gpu_idle = 0;
+    VG_LITE_TEST_CHECK_ERROR(vg_lite_get_parameter(VG_LITE_GPU_IDLE_STATE, 1, (vg_lite_pointer)&is_gpu_idle));
+    if (!is_gpu_idle) {
+        /* Do not flush if GPU is busy */
+        return VG_LITE_SUCCESS;
+    }
+
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_flush());
+    return VG_LITE_SUCCESS;
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/
