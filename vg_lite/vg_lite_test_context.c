@@ -220,11 +220,14 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
     if (error == VG_LITE_SUCCESS) {
         GPU_LOG_INFO("Test case '%s' render success", item->name);
     } else {
-        GPU_LOG_ERROR("Test case '%s' render success: %d (%s)", item->name, error, error_str);
+        GPU_LOG_ERROR("Test case '%s' render failed: %d (%s)", item->name, error, error_str);
     }
 
+    bool screenshot_cmp_pass = true;
+
     if (ctx->gpu_ctx->param.screenshot_en) {
-        if (!vg_lite_test_context_check_screenshot(ctx, item->name)) {
+        screenshot_cmp_pass = vg_lite_test_context_check_screenshot(ctx, item->name);
+        if (!screenshot_cmp_pass) {
             error_str = "FAILED";
         }
     }
@@ -233,7 +236,7 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
 
     vg_lite_test_context_cleanup(ctx);
 
-    return error == VG_LITE_SUCCESS;
+    return error == VG_LITE_SUCCESS && screenshot_cmp_pass;
 }
 
 vg_lite_buffer_t* vg_lite_test_context_get_target_buffer(struct vg_lite_test_context_s* ctx)
