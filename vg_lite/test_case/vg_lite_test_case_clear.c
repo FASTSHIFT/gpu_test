@@ -74,13 +74,18 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     /* Green */
     rect.width /= 2;
     rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, 0xFF00FF00));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, 0xFF00FF0F));
 
     /* Blue */
     rect.width /= 2;
     rect.height /= 2;
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, 0xFF0000FF));
 
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
     return VG_LITE_SUCCESS;
 }
 

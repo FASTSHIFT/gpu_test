@@ -89,6 +89,11 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
+    return VG_LITE_SUCCESS;
+}
+
 static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
 {
     return VG_LITE_SUCCESS;

@@ -47,6 +47,7 @@ extern "C" {
         .instructions = INSTRUCTIONS,                            \
         .feature = gcFEATURE_BIT_VG_##FEATURE,                   \
         .on_setup = on_setup,                                    \
+        .on_draw = on_draw,                                      \
         .on_teardown = on_teardown,                              \
     }
 
@@ -65,6 +66,7 @@ struct vg_lite_test_item_s {
     const char* instructions;
     int feature;
     vg_lite_test_func_t on_setup;
+    vg_lite_test_func_t on_draw;
     vg_lite_test_func_t on_teardown;
 };
 
