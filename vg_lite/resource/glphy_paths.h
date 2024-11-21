@@ -24,7 +24,7 @@
 #ifndef GLPHY_PATHS_H
 #define GLPHY_PATHS_H
 
-#include "vg_lite.h"
+#include <vg_lite.h>
 
 /* '龍' */
 static const int16_t glphy_u9f8d_path_data[] = {

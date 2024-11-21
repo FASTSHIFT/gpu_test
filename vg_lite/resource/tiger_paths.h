@@ -24,7 +24,7 @@
 #ifndef TIGER_PATHS_H
 #define TIGER_PATHS_H
 
-#include "vg_lite.h"
+#include <vg_lite.h>
 
 /* Path no.0 */
 
