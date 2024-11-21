@@ -65,6 +65,8 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_matrix_t matrix;
     vg_lite_identity(&matrix);
 
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, NULL, 0xFFFFFFFF));
+
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(
             &ctx->target_buffer,
@@ -72,6 +74,18 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
             &matrix,
             VG_LITE_BLEND_SRC_OVER,
             0,
+            VG_LITE_FILTER_BI_LINEAR));
+
+    ctx->src_buffer.image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
+
+    vg_lite_translate(50, 0, &matrix);
+    VG_LITE_TEST_CHECK_ERROR_RETURN(
+        vg_lite_blit(
+            &ctx->target_buffer,
+            &ctx->src_buffer,
+            &matrix,
+            VG_LITE_BLEND_SRC_OVER,
+            0x1F1F1F1F,
             VG_LITE_FILTER_BI_LINEAR));
 
     return VG_LITE_SUCCESS;
@@ -82,4 +96,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(blit, NONE, "Blit 48x480 BGRA8888 image");
+VG_LITE_TEST_CASE_ITEM_DEF(blit, NONE, "Draw two pointers opaque and semi-transparent");
