@@ -57,7 +57,7 @@ struct vg_lite_test_context_s {
     vg_lite_matrix_t matrix;
     uint32_t prepare_tick;
     uint32_t finish_tick;
-    char remark_text[128];
+    char remark_text[256];
     void* user_data;
 };
 
@@ -136,7 +136,7 @@ void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
 static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s* ctx, const char* name)
 {
     bool retval = false;
-    char path[256];
+    char path[128];
     snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s.png", ctx->gpu_ctx->param.output_dir, name);
 
     struct gpu_buffer_s target_buffer;
@@ -149,11 +149,13 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
     }
 
     if (target_buffer.width != loaded_buffer->width || target_buffer.height != loaded_buffer->height) {
-        GPU_LOG_ERROR("Screenshot size not match: %s, target: W%dxH%d vs loaded: W%dxH%d",
+        snprintf(ctx->remark_text, sizeof(ctx->remark_text),
+            "Screenshot size not matched: %s target: W%dxH%d vs loaded: W%dxH%d",
             path,
-            target_buffer.width, target_buffer.height,
-            loaded_buffer->width, loaded_buffer->height);
-        snprintf(ctx->remark_text, sizeof(ctx->remark_text), "Screenshot size not match");
+            (int)target_buffer.width, (int)target_buffer.height,
+            (int)loaded_buffer->width, (int)loaded_buffer->height);
+
+        GPU_LOG_ERROR("%s", ctx->remark_text);
         goto failed;
     }
 
