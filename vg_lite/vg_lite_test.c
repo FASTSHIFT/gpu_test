@@ -62,6 +62,7 @@ struct vg_lite_test_iter_s {
     int current_index;
     int current_loop_count;
     int total_loop_count;
+    bool is_failed;
 };
 
 /**********************
@@ -157,6 +158,10 @@ static bool vg_lite_test_iter_next(struct vg_lite_test_iter_s* iter)
     }
 
     case GPU_TEST_MODE_STRESS: {
+        if(iter->is_failed) {
+            return false;
+        }
+
         GPU_LOG_INFO("Test loop count: %d/%d", iter->current_loop_count, iter->total_loop_count);
         if (iter->current_loop_count >= iter->total_loop_count) {
             GPU_LOG_INFO("Test loop count reached, exit");
@@ -200,9 +205,7 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
     iter.total_loop_count = ctx->param.run_loop_count;
 
     while (vg_lite_test_iter_next(&iter)) {
-        if (!vg_lite_test_context_run_item(vg_lite_ctx, iter.item)) {
-            break;
-        }
+        iter.is_failed = vg_lite_test_context_run_item(vg_lite_ctx, iter.item);
     }
 
     vg_lite_test_context_destroy(vg_lite_ctx);
