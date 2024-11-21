@@ -75,6 +75,20 @@ struct gpu_recorder_s* gpu_recorder_create(const char* dir_path, const char* nam
 void gpu_recorder_delete(struct gpu_recorder_s* recorder)
 {
     GPU_ASSERT_NULL(recorder);
+
+    /* Get current position of file */
+    off_t current_position = lseek(recorder->fd, 0, SEEK_CUR);
+    if (current_position >= 0) {
+        GPU_LOG_INFO("current position of file: %d", (int)current_position);
+
+        /* Truncate file to current position */
+        if (ftruncate(recorder->fd, current_position) < 0) {
+            GPU_LOG_ERROR("ftruncate failed: %d", errno);
+        }
+    } else {
+        GPU_LOG_ERROR("lseek failed: %d", errno);
+    }
+
     close(recorder->fd);
     GPU_LOG_INFO("recorder file closed, fd = %d", recorder->fd);
 
