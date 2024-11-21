@@ -55,7 +55,8 @@ struct vg_lite_test_context_s {
     vg_lite_buffer_t src_buffer;
     struct vg_lite_test_path_s* path;
     vg_lite_matrix_t matrix;
-    uint32_t prepare_tick;
+    uint32_t setup_tick;
+    uint32_t draw_tick;
     uint32_t finish_tick;
     char remark_text[256];
     void* user_data;
@@ -107,7 +108,7 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
             "Target Format,Source Format,"
             "Target Address,Source Address,"
             "Target Area,Source Area,"
-            "Prepare Time(ms),Finish Time(ms),"
+            "Setup Time(ms),Draw Time(ms),Finish Time(ms),"
             "Result,"
             "Remark"
             "\n");
@@ -203,12 +204,21 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
 
     GPU_LOG_INFO("Running test case: %s", item->name);
 
-    uint32_t start_tick = gpu_tick_get();
-    vg_lite_error_t error = item->on_setup(ctx);
-    ctx->prepare_tick = gpu_tick_elaps(start_tick);
+    vg_lite_error_t error = VG_LITE_SUCCESS;
+    {
+        uint32_t start_tick = gpu_tick_get();
+        error = item->on_setup(ctx);
+        ctx->setup_tick = gpu_tick_elaps(start_tick);
+    }
 
     if (error == VG_LITE_SUCCESS) {
-        start_tick = gpu_tick_get();
+        uint32_t start_tick = gpu_tick_get();
+        error = item->on_draw(ctx);
+        ctx->draw_tick = gpu_tick_elaps(start_tick);
+    }
+
+    if (error == VG_LITE_SUCCESS) {
+        uint32_t start_tick = gpu_tick_get();
         error = vg_lite_finish();
         ctx->finish_tick = gpu_tick_elaps(start_tick);
     }
@@ -307,7 +317,8 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     memset(ctx->target_buffer.memory, 0, target_size);
 
     ctx->remark_text[0] = '\0';
-    ctx->prepare_tick = 0;
+    ctx->setup_tick = 0;
+    ctx->draw_tick = 0;
     ctx->finish_tick = 0;
     ctx->user_data = NULL;
 
@@ -339,6 +350,7 @@ static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, cons
         "%dx%d,%dx%d,"
         "%0.3f,"
         "%0.3f,"
+        "%0.3f,"
         "%s,"
         "%s\n",
         item->name,
@@ -351,7 +363,8 @@ static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, cons
         (int)ctx->target_buffer.height,
         (int)ctx->src_buffer.width,
         (int)ctx->src_buffer.height,
-        ctx->prepare_tick / 1000.0f,
+        ctx->setup_tick / 1000.0f,
+        ctx->draw_tick / 1000.0f,
         ctx->finish_tick / 1000.0f,
         error_str,
         ctx->remark_text);
