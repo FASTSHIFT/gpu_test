@@ -128,7 +128,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
     vg_lite_test_buffer_alloc(image, 64, 64, VG_LITE_A8, VG_LITE_TEST_STRIDE_AUTO);
 
-    image->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
     uint8_t* dst = image->memory;
 
     /* Fill gradient image with alpha values */

@@ -79,6 +79,7 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
             0,
             VG_LITE_FILTER_BI_LINEAR));
 
+    src_buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
     vg_lite_translate(50, 0, &matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(
