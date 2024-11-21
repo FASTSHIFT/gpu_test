@@ -48,12 +48,18 @@ struct gpu_buffer_s;
 
 /**
  * @brief Take a screenshot of the given buffer and save it to the given directory with the given name.
- * @param dirpath The directory path to save the screenshot to.
  * @param name The name of the screenshot file.
  * @param buffer The buffer to take the screenshot of.
  * @return 0 on success, -1 on failure.
  */
-int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffer_s* buffer);
+int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer);
+
+/**
+ * @brief Load a screenshot from the given directory with the given name.
+ * @param name The name of the screenshot file.
+ * @return The buffer containing the screenshot, or NULL on failure.
+ */
+struct gpu_buffer_s* gpu_screenshot_load(const char* path);
 
 /**********************
  *      MACROS

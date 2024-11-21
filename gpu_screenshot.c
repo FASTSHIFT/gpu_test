@@ -41,8 +41,6 @@
  *  STATIC PROTOTYPES
  **********************/
 
-static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* path);
-
 /**********************
  *  STATIC VARIABLES
  **********************/
@@ -55,39 +53,15 @@ static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* pa
  *   GLOBAL FUNCTIONS
  **********************/
 
-int gpu_screenshot(const char* dirpath, const char* name, const struct gpu_buffer_s* buffer)
+int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer)
 {
-    GPU_ASSERT_NULL(dirpath);
-    GPU_ASSERT_NULL(name);
+    GPU_ASSERT_NULL(path);
     GPU_ASSERT_NULL(buffer);
 
-    GPU_LOG_INFO("Taking screenshot of '%s' ...", name);
-
-    char path[256];
-    snprintf(path, sizeof(path), "%s/screenshot_%s.png", dirpath, name);
-
-    int retval = save_buffer_to_file(buffer, path);
-
-    if (retval > 0) {
-        GPU_LOG_INFO("Screenshot saved to %s", path);
-    } else {
-        GPU_LOG_ERROR("Failed to save screenshot: %d", retval);
-    }
-
-    return retval;
-}
-
-/**********************
- *   STATIC FUNCTIONS
- **********************/
-
-static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* path)
-{
-    png_image image;
-    int retval;
+    GPU_LOG_INFO("Taking screenshot of '%s' ...", path);
 
     /* Construct the PNG image structure. */
-
+    png_image image;
     memset(&image, 0, sizeof(image));
 
     image.version = PNG_IMAGE_VERSION;
@@ -110,8 +84,42 @@ static int save_buffer_to_file(const struct gpu_buffer_s* buffer, const char* pa
     }
 
     /* Write the PNG image. */
+    int retval = png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL);
 
-    retval = png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL);
+    if (retval > 0) {
+        GPU_LOG_INFO("Screenshot saved to %s", path);
+    } else {
+        GPU_LOG_ERROR("Failed to save screenshot: %d", retval);
+    }
 
     return retval;
 }
+
+struct gpu_buffer_s* gpu_screenshot_load(const char* path)
+{
+    png_image image;
+    memset(&image, 0, sizeof(image));
+    image.version = PNG_IMAGE_VERSION;
+
+    if (!png_image_begin_read_from_file(&image, path)) {
+        GPU_LOG_WARN("Failed to read PNG image from %s", path);
+        return NULL;
+    }
+
+    struct gpu_buffer_s* buffer = gpu_buffer_alloc(image.width, image.height, GPU_COLOR_FORMAT_BGRA8888, image.width * sizeof(uint32_t), 8);
+
+    image.format = PNG_FORMAT_BGRA;
+
+    if (!png_image_finish_read(&image, NULL, buffer->data, buffer->stride, NULL)) {
+        GPU_LOG_WARN("Failed to finish reading PNG image from %s", path);
+        gpu_buffer_free(buffer);
+        return NULL;
+    }
+
+    png_image_free(&image);
+    return buffer;
+}
+
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
