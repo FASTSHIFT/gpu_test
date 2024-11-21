@@ -142,15 +142,17 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_test_path_append_circle(path, 32, 32, 32, 32);
     vg_lite_test_path_end(path);
 
-    VG_LITE_TEST_CHECK_ERROR_RETURN(draw_image(ctx, image, 0, 0, 0xFF000000));
-    VG_LITE_TEST_CHECK_ERROR_RETURN(draw_image(ctx, image, 0, 100, 0xFF1F1F1F));
-    VG_LITE_TEST_CHECK_ERROR_RETURN(draw_image(ctx, image, 0, 200, 0xFFFFFFFF));
-
     return VG_LITE_SUCCESS;
 }
 
 static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
 {
+    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
+
+    VG_LITE_TEST_CHECK_ERROR_RETURN(draw_image(ctx, image, 0, 0, 0xFF000000));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(draw_image(ctx, image, 0, 100, 0xFF1F1F1F));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(draw_image(ctx, image, 0, 200, 0xFFFFFFFF));
+
     return VG_LITE_SUCCESS;
 }
 

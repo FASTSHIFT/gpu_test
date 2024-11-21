@@ -59,13 +59,18 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
     vg_lite_path_t path;
-    vg_lite_init_path(
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_init_path(
         &path,
         VG_LITE_S16,
         VG_LITE_HIGH,
         sizeof(glphy_u9f8d_path_data),
-        (void*)glphy_u9f8d_path_data, -10000, -10000, 10000, 10000);
+        (void*)glphy_u9f8d_path_data, -10000, -10000, 10000, 10000));
 
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);
@@ -86,11 +91,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
                 0xFF0000FF));
     }
 
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 

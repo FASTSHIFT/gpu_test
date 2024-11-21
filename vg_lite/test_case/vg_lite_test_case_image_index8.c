@@ -72,6 +72,13 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         IMAGE_COGWHEEL_INDEX8_FORMAT,
         IMAGE_COGWHEEL_INDEX8_STRIDE);
 
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
+    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
+
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);
     vg_lite_translate(100, 100, &matrix);
@@ -84,11 +91,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         0,
         VG_LITE_FILTER_BI_LINEAR));
 
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 

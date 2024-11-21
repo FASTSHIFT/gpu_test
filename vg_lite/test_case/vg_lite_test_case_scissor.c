@@ -73,6 +73,20 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_enable_scissor());
 #endif
 
+    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
+    vg_lite_test_load_image(
+        image,
+        image_circle_a8_map,
+        IMAGE_CIRCLE_A8_WIDTH,
+        IMAGE_CIRCLE_A8_HEIGHT,
+        IMAGE_CIRCLE_A8_FORMAT,
+        IMAGE_CIRCLE_A8_STRIDE);
+
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);
 
@@ -103,14 +117,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
             0xFFFF0000));
 
     vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_load_image(
-        image,
-        image_circle_a8_map,
-        IMAGE_CIRCLE_A8_WIDTH,
-        IMAGE_CIRCLE_A8_HEIGHT,
-        IMAGE_CIRCLE_A8_FORMAT,
-        IMAGE_CIRCLE_A8_STRIDE);
-
     vg_lite_translate(250, 250, &matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(
@@ -121,11 +127,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
             0xFF0000FF,
             VG_LITE_FILTER_BI_LINEAR));
 
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 

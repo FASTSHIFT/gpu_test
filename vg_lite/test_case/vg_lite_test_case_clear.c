@@ -58,6 +58,11 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
     vg_lite_rectangle_t rect = { 0, 0, target_buffer->width, target_buffer->height };
 
@@ -74,18 +79,13 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     /* Green */
     rect.width /= 2;
     rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, 0xFF00FF0F));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, 0xFF00FF00));
 
     /* Blue */
     rect.width /= 2;
     rect.height /= 2;
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, 0xFF0000FF));
 
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 

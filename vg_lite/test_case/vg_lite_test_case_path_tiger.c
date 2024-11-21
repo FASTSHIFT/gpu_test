@@ -59,6 +59,11 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);
     vg_lite_translate(150, 150, &matrix);
@@ -78,11 +83,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_test_idle_flush());
     }
 
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 

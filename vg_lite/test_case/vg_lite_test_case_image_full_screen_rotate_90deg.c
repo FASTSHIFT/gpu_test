@@ -88,6 +88,14 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     VG_LITE_TEST_CHECK_ERROR_RETURN(clear_buffer(image, image->width * 0.75f, 0xFF0000FF));
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_finish());
 
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
+    vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
+    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
+
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);
 
@@ -97,12 +105,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_translate(-image->width / 2, -image->height / 2, &matrix);
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_blit(target_buffer, image, &matrix, VG_LITE_BLEND_SRC_OVER, 0, VG_LITE_FILTER_BI_LINEAR));
-
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 

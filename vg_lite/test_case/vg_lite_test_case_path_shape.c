@@ -59,6 +59,11 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
+    return VG_LITE_SUCCESS;
+}
+
+static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
+{
     vg_lite_test_path_t* path = vg_lite_test_context_init_path(ctx, VG_LITE_FP32);
 
     vg_lite_test_path_set_bounding_box(path, 0, 0, 240, 240);
@@ -109,11 +114,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
             VG_LITE_BLEND_SRC_OVER,
             0xFF0000FF));
 
-    return VG_LITE_SUCCESS;
-}
-
-static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
-{
     return VG_LITE_SUCCESS;
 }
 
