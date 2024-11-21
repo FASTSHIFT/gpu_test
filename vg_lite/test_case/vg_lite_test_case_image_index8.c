@@ -92,4 +92,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(image_index8, NONE, "Draw an indexed image with 8-bit palette");
+VG_LITE_TEST_CASE_ITEM_DEF(image_index8, IM_INDEX_FORMAT, "Draw an indexed image with 8-bit palette");
