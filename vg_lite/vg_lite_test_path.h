@@ -39,7 +39,7 @@ extern "C" {
  *      DEFINES
  *********************/
 
-typedef struct _vg_lite_test_path_t vg_lite_test_path_t;
+typedef struct vg_lite_test_path_s vg_lite_test_path_t;
 
 typedef void (*vg_lite_test_path_iter_cb_t)(void* user_data, uint8_t op_code, const float* data, uint32_t len);
 

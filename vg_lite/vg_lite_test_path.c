@@ -55,7 +55,7 @@
  *      TYPEDEFS
  **********************/
 
-struct _vg_lite_test_path_t {
+struct vg_lite_test_path_s {
     vg_lite_path_t base;
     vg_lite_matrix_t matrix;
     size_t mem_size;
