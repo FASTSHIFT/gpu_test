@@ -54,12 +54,14 @@
  **********************/
 
 struct vg_lite_test_iter_s {
+    enum gpu_test_mode_e mode;
     const struct vg_lite_test_item_s* item;
     const struct vg_lite_test_item_s** group;
     int group_size;
     int name_to_index;
     int current_index;
     int current_loop_count;
+    int total_loop_count;
 };
 
 /**********************
@@ -173,11 +175,11 @@ static int vg_lite_test_name_to_index(const struct vg_lite_test_item_s** group, 
     return -1;
 }
 
-static bool vg_lite_test_iter_next(struct gpu_test_context_s* ctx, struct vg_lite_test_iter_s* iter)
+static bool vg_lite_test_iter_next(struct vg_lite_test_iter_s* iter)
 {
     iter->current_loop_count++;
 
-    switch (ctx->param.mode) {
+    switch (iter->mode) {
     case GPU_TEST_MODE_DEFAULT: {
         /* Check if there is a specific test case to run */
         if (iter->name_to_index >= 0) {
@@ -198,8 +200,8 @@ static bool vg_lite_test_iter_next(struct gpu_test_context_s* ctx, struct vg_lit
     }
 
     case GPU_TEST_MODE_STRESS: {
-        GPU_LOG_INFO("Test loop count: %d/%d", iter->current_loop_count, ctx->param.run_loop_count);
-        if (iter->current_loop_count >= ctx->param.run_loop_count) {
+        GPU_LOG_INFO("Test loop count: %d/%d", iter->current_loop_count, iter->total_loop_count);
+        if (iter->current_loop_count >= iter->total_loop_count) {
             GPU_LOG_INFO("Test loop count reached, exit");
             return false;
         }
@@ -210,7 +212,7 @@ static bool vg_lite_test_iter_next(struct gpu_test_context_s* ctx, struct vg_lit
     }
 
     default:
-        GPU_LOG_ERROR("Unsupported test mode: %d", ctx->param.mode);
+        GPU_LOG_ERROR("Unsupported test mode: %d", iter->mode);
         break;
     }
 
@@ -236,11 +238,13 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
 #undef ITEM_DEF
 
     struct vg_lite_test_iter_s iter = { 0 };
+    iter.mode = ctx->param.mode;
     iter.group = vg_lite_test_group;
     iter.group_size = sizeof(vg_lite_test_group) / sizeof(vg_lite_test_group[0]);
     iter.name_to_index = vg_lite_test_name_to_index(iter.group, iter.group_size, ctx->param.testcase_name);
+    iter.total_loop_count = ctx->param.run_loop_count;
 
-    while (vg_lite_test_iter_next(ctx, &iter)) {
+    while (vg_lite_test_iter_next(&iter)) {
         if (!vg_lite_test_run_item(&vg_lite_ctx, iter.item)) {
             break;
         }
