@@ -59,8 +59,7 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_test_path_t* path = vg_lite_test_path_create(VG_LITE_FP32);
-    ctx->user_data = path;
+    vg_lite_test_path_t* path = vg_lite_test_context_get_path(ctx, VG_LITE_FP32);
 
     vg_lite_test_path_set_bounding_box(path, 0, 0, 240, 240);
 
@@ -113,8 +112,6 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 
 static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_test_path_t* path = ctx->user_data;
-    vg_lite_test_path_destroy(path);
     return VG_LITE_SUCCESS;
 }
 
