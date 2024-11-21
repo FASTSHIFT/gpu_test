@@ -70,7 +70,7 @@ void gpu_log_printf(enum gpu_log_level_type_e level, const char* func, const cha
         LOG_INFO, LOG_WARNING, LOG_ERR
     };
 
-    printf(priority[level], "[GPU] %s: %s\n", func, buf);
+    syslog(priority[level], "[GPU] %s: %s\n", func, buf);
 
 #else
     static const char* prompt[_GPU_LOG_LEVEL_LAST] = {
