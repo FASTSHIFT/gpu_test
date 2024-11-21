@@ -25,8 +25,9 @@
  *      INCLUDES
  *********************/
 
-#include "vg_lite_test_context.h"
-#include "vg_lite_test_utils.h"
+#include "../resource/tiger_paths.h"
+#include "../vg_lite_test_context.h"
+#include "../vg_lite_test_utils.h"
 
 /*********************
  *      DEFINES
@@ -58,27 +59,22 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_rectangle_t rect = { 0, 0, ctx->target_buffer.width, ctx->target_buffer.height };
+    vg_lite_matrix_t matrix;
+    vg_lite_identity(&matrix);
+    vg_lite_translate(150, 150, &matrix);
+    vg_lite_scale(3.5, 3.5, &matrix);
 
-    /* White */
-    rect.width /= 2;
-    rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFFFFFF));
+    for (int i = 0; i < TIGER_PATH_COUNT; i++) {
+        VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_draw(
+            &ctx->target_buffer,
+            &tiger_path[i],
+            VG_LITE_FILL_EVEN_ODD,
+            &matrix,
+            VG_LITE_BLEND_SRC_OVER,
+            tiger_color_data[i]));
 
-    /* Red */
-    rect.width /= 2;
-    rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFF0000));
-
-    /* Green */
-    rect.width /= 2;
-    rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF00FF00));
-
-    /* Blue */
-    rect.width /= 2;
-    rect.height /= 2;
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF0000FF));
+        VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_test_idle_flush());
+    }
 
     return VG_LITE_SUCCESS;
 }
@@ -88,4 +84,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(clear, NONE, "Clear 4 areas with different color");
+VG_LITE_TEST_CASE_ITEM_DEF(path_tiger, NONE, "Draw tiger paths");

@@ -25,10 +25,8 @@
  *      INCLUDES
  *********************/
 
-#include "resource/image_bgra8888.h"
-#include "vg_lite_test_context.h"
-#include "vg_lite_test_utils.h"
-#include <string.h>
+#include "../vg_lite_test_context.h"
+#include "../vg_lite_test_utils.h"
 
 /*********************
  *      DEFINES
@@ -60,19 +58,27 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_test_load_image(&ctx->src_buffer, image_bgra8888_48x480, IMAGE_WIDTH, IMAGE_HEIGHT, VG_LITE_BGRA8888, IMAGE_STRIDE);
+    vg_lite_rectangle_t rect = { 0, 0, ctx->target_buffer.width, ctx->target_buffer.height };
 
-    vg_lite_matrix_t matrix;
-    vg_lite_identity(&matrix);
+    /* White */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFFFFFF));
 
-    VG_LITE_TEST_CHECK_ERROR_RETURN(
-        vg_lite_blit(
-            &ctx->target_buffer,
-            &ctx->src_buffer,
-            &matrix,
-            VG_LITE_BLEND_SRC_OVER,
-            0,
-            VG_LITE_FILTER_BI_LINEAR));
+    /* Red */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFFFF0000));
+
+    /* Green */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF00FF00));
+
+    /* Blue */
+    rect.width /= 2;
+    rect.height /= 2;
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, 0xFF0000FF));
 
     return VG_LITE_SUCCESS;
 }
@@ -82,4 +88,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(blit, NONE, "Blit 48x480 BGRA8888 image");
+VG_LITE_TEST_CASE_ITEM_DEF(clear, NONE, "Clear 4 areas with different color");

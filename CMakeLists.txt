@@ -68,6 +68,7 @@ endif ()
 file(GLOB GPU_TEST_SOURCES
         ${PROJECT_SOURCE_DIR}/*.c
         ${PROJECT_SOURCE_DIR}/vg_lite/*.c
+        ${PROJECT_SOURCE_DIR}/vg_lite/test_case/*.c
         )
 
 ## vg-lite

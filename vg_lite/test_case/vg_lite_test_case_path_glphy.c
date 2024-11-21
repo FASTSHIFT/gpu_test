@@ -25,9 +25,9 @@
  *      INCLUDES
  *********************/
 
-#include "resource/tiger_paths.h"
-#include "vg_lite_test_context.h"
-#include "vg_lite_test_utils.h"
+#include "../resource/glphy_paths.h"
+#include "../vg_lite_test_context.h"
+#include "../vg_lite_test_utils.h"
 
 /*********************
  *      DEFINES
@@ -60,20 +60,29 @@
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_matrix_t matrix;
+
+    vg_lite_path_t path;
+    vg_lite_init_path(
+        &path,
+        VG_LITE_S16,
+        VG_LITE_HIGH,
+        sizeof(glphy_u9f8d_path_data),
+        (void*)glphy_u9f8d_path_data, -10000, -10000, 10000, 10000);
+
     vg_lite_identity(&matrix);
-    vg_lite_translate(150, 150, &matrix);
-    vg_lite_scale(3.5, 3.5, &matrix);
+    vg_lite_translate(0, 50, &matrix);
+    vg_lite_scale(0.005, 0.005, &matrix);
 
-    for (int i = 0; i < TIGER_PATH_COUNT; i++) {
-        VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_draw(
-            &ctx->target_buffer,
-            &tiger_path[i],
-            VG_LITE_FILL_EVEN_ODD,
-            &matrix,
-            VG_LITE_BLEND_SRC_OVER,
-            tiger_color_data[i]));
-
-        VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_test_idle_flush());
+    for (int i = 0; i < 5; i++) {
+        vg_lite_translate(10000, 0, &matrix);
+        VG_LITE_TEST_CHECK_ERROR_RETURN(
+            vg_lite_draw(
+                &ctx->target_buffer,
+                &path,
+                VG_LITE_FILL_NON_ZERO,
+                &matrix,
+                VG_LITE_BLEND_SRC_OVER,
+                0xFF0000FF));
     }
 
     return VG_LITE_SUCCESS;
@@ -84,4 +93,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(path_tiger, NONE, "Draw tiger paths");
+VG_LITE_TEST_CASE_ITEM_DEF(path_glphy, NONE, "Draw 5 glphy(size 40x40) paths");

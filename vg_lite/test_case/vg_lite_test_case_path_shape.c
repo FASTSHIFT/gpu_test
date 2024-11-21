@@ -25,8 +25,9 @@
  *      INCLUDES
  *********************/
 
-#include "vg_lite_test_context.h"
-#include "vg_lite_test_utils.h"
+#include "../vg_lite_test_context.h"
+#include "../vg_lite_test_path.h"
+#include "../vg_lite_test_utils.h"
 
 /*********************
  *      DEFINES
@@ -58,12 +59,63 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
+    vg_lite_test_path_t* path = vg_lite_test_path_create(VG_LITE_FP32);
+    ctx->user_data = path;
+
+    vg_lite_test_path_set_bounding_box(path, 0, 0, 240, 240);
+
+    vg_lite_test_path_append_rect(path, 0, 0, 100, 100, 0);
+    vg_lite_test_path_end(path);
+
+    vg_lite_matrix_t matrix;
+    vg_lite_identity(&matrix);
+
+    VG_LITE_TEST_CHECK_ERROR_RETURN(
+        vg_lite_draw(
+            &ctx->target_buffer,
+            vg_lite_test_path_get_path(path),
+            VG_LITE_FILL_EVEN_ODD,
+            &matrix,
+            VG_LITE_BLEND_SRC_OVER,
+            0xFFFF0000));
+
+    vg_lite_translate(120, 0, &matrix);
+    vg_lite_test_path_reset(path, VG_LITE_FP32);
+    vg_lite_test_path_append_rect(path, 0, 0, 100, 100, 20);
+    vg_lite_test_path_end(path);
+
+    VG_LITE_TEST_CHECK_ERROR_RETURN(
+        vg_lite_draw(
+            &ctx->target_buffer,
+            vg_lite_test_path_get_path(path),
+            VG_LITE_FILL_EVEN_ODD,
+            &matrix,
+            VG_LITE_BLEND_SRC_OVER,
+            0xFF00FF00));
+
+    vg_lite_translate(120, 0, &matrix);
+    vg_lite_test_path_reset(path, VG_LITE_FP32);
+    vg_lite_test_path_append_circle(path, 50, 50, 50, 50);
+    vg_lite_test_path_append_circle(path, 50, 50, 40, 40);
+    vg_lite_test_path_end(path);
+
+    VG_LITE_TEST_CHECK_ERROR_RETURN(
+        vg_lite_draw(
+            &ctx->target_buffer,
+            vg_lite_test_path_get_path(path),
+            VG_LITE_FILL_EVEN_ODD,
+            &matrix,
+            VG_LITE_BLEND_SRC_OVER,
+            0xFF0000FF));
+
     return VG_LITE_SUCCESS;
 }
 
 static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
 {
+    vg_lite_test_path_t* path = ctx->user_data;
+    vg_lite_test_path_destroy(path);
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(template, NONE, "Template test case");
+VG_LITE_TEST_CASE_ITEM_DEF(path_shape, NONE, "Draw round rect and circle");

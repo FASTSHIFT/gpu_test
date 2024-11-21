@@ -228,12 +228,12 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
     /* Import testcase entry */
 
 #define ITEM_DEF(NAME) extern struct vg_lite_test_item_s vg_lite_test_case_item_##NAME;
-#include "vg_lite_test_case.inc"
+#include "test_case/vg_lite_test_case.inc"
 #undef ITEM_DEF
 
 #define ITEM_DEF(NAME) &vg_lite_test_case_item_##NAME,
     static const struct vg_lite_test_item_s* vg_lite_test_group[] = {
-#include "vg_lite_test_case.inc"
+#include "test_case/vg_lite_test_case.inc"
     };
 #undef ITEM_DEF
 
