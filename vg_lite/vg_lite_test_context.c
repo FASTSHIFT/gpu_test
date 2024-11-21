@@ -126,8 +126,12 @@ void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
     GPU_ASSERT_NULL(ctx);
     vg_lite_test_buffer_free(&ctx->target_buffer);
 
+    if (ctx->path) {
+        vg_lite_test_path_destroy(ctx->path);
+        ctx->path = NULL;
+    }
+
     /* Check if the context is clean */
-    GPU_ASSERT(ctx->path == NULL);
     GPU_ASSERT(ctx->src_buffer.memory == NULL);
 
     memset(ctx, 0, sizeof(struct vg_lite_test_context_s));
@@ -278,10 +282,14 @@ void vg_lite_test_context_get_transform(struct vg_lite_test_context_s* ctx, vg_l
 struct vg_lite_test_path_s* vg_lite_test_context_init_path(struct vg_lite_test_context_s* ctx, vg_lite_format_t format)
 {
     GPU_ASSERT_NULL(ctx);
-    /* Check if the path is already created */
-    GPU_ASSERT(ctx->path == NULL);
 
-    ctx->path = vg_lite_test_path_create(format);
+    /* Check if the path is already created */
+    if (ctx->path == NULL) {
+        ctx->path = vg_lite_test_path_create(format);
+    } else {
+        vg_lite_test_path_reset(ctx->path, format);
+    }
+
     return ctx->path;
 }
 
@@ -327,8 +335,7 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     }
 
     if (ctx->path) {
-        vg_lite_test_path_destroy(ctx->path);
-        ctx->path = NULL;
+        vg_lite_test_path_reset(ctx->path, VG_LITE_FP32);
     }
 }
 
