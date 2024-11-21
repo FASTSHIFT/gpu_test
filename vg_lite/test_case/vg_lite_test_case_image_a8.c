@@ -155,4 +155,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(image_a8, NONE, "");
+VG_LITE_TEST_CASE_ITEM_DEF(image_a8, NONE, "Draw A8 image using different drawing methods");

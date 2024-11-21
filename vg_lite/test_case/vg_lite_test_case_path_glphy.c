@@ -94,4 +94,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(path_glphy, NONE, "Draw 5 glphy(size 40x40) paths");
+VG_LITE_TEST_CASE_ITEM_DEF(path_glphy, NONE, "Draw 5x '龍' (size 40x40) glphy paths");

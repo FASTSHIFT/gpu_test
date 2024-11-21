@@ -86,4 +86,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(path_tiger, NONE, "Draw tiger paths");
+VG_LITE_TEST_CASE_ITEM_DEF(path_tiger, NONE, "Draw tiger paths(239)");
