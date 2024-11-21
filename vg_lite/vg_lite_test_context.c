@@ -26,8 +26,10 @@
  *********************/
 
 #include "vg_lite_test_context.h"
+#include "../gpu_assert.h"
 #include "../gpu_context.h"
 #include "../gpu_recorder.h"
+#include "vg_lite_test_path.h"
 #include "vg_lite_test_utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -82,6 +84,10 @@ void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx)
 void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_test_buffer_free(&ctx->target_buffer);
+
+    /* Check if the context is clean */
+    GPU_ASSERT(ctx->path == NULL);
+    GPU_ASSERT(ctx->src_buffer.memory == NULL);
 }
 
 void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
@@ -97,6 +103,11 @@ void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
 
     if (ctx->src_buffer.memory) {
         vg_lite_test_buffer_free(&ctx->src_buffer);
+    }
+
+    if (ctx->path) {
+        vg_lite_test_path_destroy(ctx->path);
+        ctx->path = NULL;
     }
 }
 
@@ -133,6 +144,15 @@ void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struc
         ctx->remark_text);
 
     gpu_recorder_write_string(ctx->gpu_ctx->recorder, result);
+}
+
+struct vg_lite_test_path_s* vg_lite_test_context_get_path(struct vg_lite_test_context_s* ctx, vg_lite_format_t format)
+{
+    /* Check if the path is already created */
+    GPU_ASSERT(ctx->path == NULL);
+
+    ctx->path = vg_lite_test_path_create(format);
+    return ctx->path;
 }
 
 /**********************

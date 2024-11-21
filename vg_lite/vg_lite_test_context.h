@@ -54,11 +54,13 @@ extern "C" {
  **********************/
 
 struct gpu_test_context_s;
+struct vg_lite_test_path_s;
 
 struct vg_lite_test_context_s {
     struct gpu_test_context_s* gpu_ctx;
     vg_lite_buffer_t target_buffer;
     vg_lite_buffer_t src_buffer;
+    struct vg_lite_test_path_s* path;
     uint32_t prepare_tick;
     uint32_t finish_tick;
     char remark_text[128];
@@ -105,6 +107,13 @@ void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx);
  * @param error The error code of the test case
  */
 void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item, vg_lite_error_t error);
+
+/**
+ * @brief Get the test path for the given format
+ * @param format The format of the test path
+ * @return The test path for the given format
+ */
+struct vg_lite_test_path_s* vg_lite_test_context_get_path(struct vg_lite_test_context_s* ctx, vg_lite_format_t format);
 
 /**********************
  *      MACROS
