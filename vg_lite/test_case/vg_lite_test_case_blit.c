@@ -66,7 +66,7 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_test_load_image(src_buffer, image_bgra8888_48x480, IMAGE_WIDTH, IMAGE_HEIGHT, VG_LITE_BGRA8888, IMAGE_STRIDE);
 
     vg_lite_matrix_t matrix;
-    vg_lite_identity(&matrix);
+    vg_lite_test_context_get_transform(ctx, &matrix);
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, NULL, 0xFFFFFFFF));
 

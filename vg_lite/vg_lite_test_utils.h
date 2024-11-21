@@ -147,6 +147,23 @@ void vg_lite_test_load_image(
  */
 vg_lite_error_t vg_lite_test_idle_flush(void);
 
+/**
+ * @breif Transform a point by a matrix.
+ * @param x The x coordinate of the point.
+ * @param y The y coordinate of the point.
+ * @param matrix The matrix to transform the point.
+ * @note The transformed point will be stored in the x and y parameters.
+ */
+void vg_lite_test_transform_point(float* x, float* y, const vg_lite_matrix_t* matrix);
+
+/**
+ * @breif Transform a rectangle by a matrix.
+ * @param rect The rectangle to be transformed.
+ * @param matrix The matrix to transform the rectangle.
+ * @note The transformed rectangle will be stored in the rect parameter.
+ */
+void vg_lite_test_transform_retangle(vg_lite_rectangle_t* rect, const vg_lite_matrix_t* matrix);
+
 /**********************
  *      MACROS
  **********************/

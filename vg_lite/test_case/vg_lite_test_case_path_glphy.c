@@ -59,8 +59,6 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_matrix_t matrix;
-
     vg_lite_path_t path;
     vg_lite_init_path(
         &path,
@@ -69,7 +67,8 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         sizeof(glphy_u9f8d_path_data),
         (void*)glphy_u9f8d_path_data, -10000, -10000, 10000, 10000);
 
-    vg_lite_identity(&matrix);
+    vg_lite_matrix_t matrix;
+    vg_lite_test_context_get_transform(ctx, &matrix);
     vg_lite_translate(0, 50, &matrix);
     vg_lite_scale(0.005, 0.005, &matrix);
 

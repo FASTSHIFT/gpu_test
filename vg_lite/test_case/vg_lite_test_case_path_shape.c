@@ -67,7 +67,7 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_test_path_end(path);
 
     vg_lite_matrix_t matrix;
-    vg_lite_identity(&matrix);
+    vg_lite_test_context_get_transform(ctx, &matrix);
 
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
 

@@ -39,6 +39,9 @@ extern "C" {
  *      DEFINES
  *********************/
 
+#define GPU_TEST_DESIGN_WIDTH 480
+#define GPU_TEST_DESIGN_HEIGHT 480
+
 /**********************
  *      TYPEDEFS
  **********************/

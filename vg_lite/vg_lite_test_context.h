@@ -32,8 +32,8 @@ extern "C" {
  *      INCLUDES
  *********************/
 
-#include <vg_lite.h>
 #include <stdbool.h>
+#include <vg_lite.h>
 
 /*********************
  *      DEFINES
@@ -106,6 +106,20 @@ vg_lite_buffer_t* vg_lite_test_context_get_target_buffer(struct vg_lite_test_con
  * @return The source buffer for the test case
  */
 vg_lite_buffer_t* vg_lite_test_context_get_src_buffer(struct vg_lite_test_context_s* ctx);
+
+/**
+ * @brief Set the transform for the test case
+ * @param ctx The test context to use
+ * @param matrix The transform matrix to set
+ */
+void vg_lite_test_context_set_transform(struct vg_lite_test_context_s* ctx, const vg_lite_matrix_t* matrix);
+
+/**
+ * @brief Get the transform for the test case
+ * @param ctx The test context to use
+ * @param matrix The transform matrix to get
+ */
+void vg_lite_test_context_get_transform(struct vg_lite_test_context_s* ctx, vg_lite_matrix_t* matrix);
 
 /**
  * @brief Get the test path for the given format

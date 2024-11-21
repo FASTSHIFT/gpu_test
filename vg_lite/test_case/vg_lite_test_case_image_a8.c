@@ -61,15 +61,17 @@
 static vg_lite_error_t draw_image(struct vg_lite_test_context_s* ctx, vg_lite_buffer_t* image, int x_ofs, int y_ofs, vg_lite_color_t bg_color)
 {
     vg_lite_matrix_t matrix;
-    vg_lite_identity(&matrix);
+    vg_lite_test_context_get_transform(ctx, &matrix);
     vg_lite_translate(x_ofs, y_ofs, &matrix);
 
     vg_lite_rectangle_t rect = {
-        .x = x_ofs,
-        .y = y_ofs,
+        .x = 0,
+        .y = 0,
         .width = image->width * 3,
         .height = image->height,
     };
+
+    vg_lite_test_transform_retangle(&rect, &matrix);
 
     vg_lite_rectangle_t rect_image = {
         .x = image->width / 4,

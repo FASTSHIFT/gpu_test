@@ -50,6 +50,7 @@ struct vg_lite_test_context_s {
     vg_lite_buffer_t target_buffer;
     vg_lite_buffer_t src_buffer;
     struct vg_lite_test_path_s* path;
+    vg_lite_matrix_t matrix;
     uint32_t prepare_tick;
     uint32_t finish_tick;
     char remark_text[128];
@@ -81,6 +82,11 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
     GPU_ASSERT_NULL(ctx);
     memset(ctx, 0, sizeof(struct vg_lite_test_context_s));
     ctx->gpu_ctx = gpu_ctx;
+    vg_lite_identity(&ctx->matrix);
+    vg_lite_scale(
+        gpu_ctx->param.img_width / (float)GPU_TEST_DESIGN_WIDTH,
+        gpu_ctx->param.img_height / (float)GPU_TEST_DESIGN_HEIGHT,
+        &ctx->matrix);
 
     GPU_ASSERT_NULL(gpu_ctx);
     vg_lite_test_buffer_alloc(
@@ -172,6 +178,18 @@ vg_lite_buffer_t* vg_lite_test_context_get_src_buffer(struct vg_lite_test_contex
 {
     GPU_ASSERT_NULL(ctx);
     return &ctx->src_buffer;
+}
+
+void vg_lite_test_context_set_transform(struct vg_lite_test_context_s* ctx, const vg_lite_matrix_t* matrix)
+{
+    GPU_ASSERT_NULL(ctx);
+    ctx->matrix = *matrix;
+}
+
+void vg_lite_test_context_get_transform(struct vg_lite_test_context_s* ctx, vg_lite_matrix_t* matrix)
+{
+    GPU_ASSERT_NULL(ctx);
+    *matrix = ctx->matrix;
 }
 
 struct vg_lite_test_path_s* vg_lite_test_context_init_path(struct vg_lite_test_context_s* ctx, vg_lite_format_t format)

@@ -60,7 +60,7 @@
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_matrix_t matrix;
-    vg_lite_identity(&matrix);
+    vg_lite_test_context_get_transform(ctx, &matrix);
     vg_lite_translate(150, 150, &matrix);
     vg_lite_scale(3.5, 3.5, &matrix);
 

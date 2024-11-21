@@ -90,7 +90,7 @@ static void show_usage(const char* progname, int exitcode)
     printf("  -m <string> Test mode: default; stress.\n");
     printf("  -o <string> GPU report file output path, default is " GPU_OUTPUT_DIR_DEFAULT "\n");
     printf("  -t <string> Testcase name.\n");
-    printf("  -i <string> Test image size(px), default is 480x480. Example: "
+    printf("  -i <string> Test output image size(px), default is 480x480. Example: "
            "<decimal-value width>x<decimal-value height>\n");
     printf("  -s Enable screenshot.\n");
     printf("  -c <int> Stress mode loop count, default is 1000.\n");
@@ -133,8 +133,8 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     memset(param, 0, sizeof(struct gpu_test_param_s));
     param->mode = GPU_TEST_MODE_DEFAULT;
     param->output_dir = GPU_OUTPUT_DIR_DEFAULT;
-    param->img_width = 480;
-    param->img_height = 480;
+    param->img_width = GPU_TEST_DESIGN_WIDTH;
+    param->img_height = GPU_TEST_DESIGN_WIDTH;
     param->run_loop_count = 1000;
 
     int ch;
@@ -200,7 +200,7 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
 
     GPU_LOG_INFO("Test mode: %d", param->mode);
     GPU_LOG_INFO("Output DIR: %s", param->output_dir);
-    GPU_LOG_INFO("Image size: %dx%d", param->img_width, param->img_height);
+    GPU_LOG_INFO("Target image size: %dx%d", param->img_width, param->img_height);
     GPU_LOG_INFO("Testcase name: %s", param->testcase_name);
     GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
     GPU_LOG_INFO("Loop count: %d", param->run_loop_count);

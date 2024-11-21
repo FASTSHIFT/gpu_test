@@ -28,6 +28,7 @@
 #include "vg_lite_test_utils.h"
 #include "../gpu_assert.h"
 #include "../gpu_utils.h"
+#include "vg_lite_test_math.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <string.h>
@@ -370,6 +371,39 @@ vg_lite_error_t vg_lite_test_idle_flush(void)
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_flush());
     return VG_LITE_SUCCESS;
+}
+
+void vg_lite_test_transform_point(float* x, float* y, const vg_lite_matrix_t* matrix)
+{
+    GPU_ASSERT_NULL(x);
+    GPU_ASSERT_NULL(y);
+    GPU_ASSERT_NULL(matrix);
+    float ori_x = *x;
+    float ori_y = *y;
+    *x = ori_x * matrix->m[0][0] + ori_y * matrix->m[0][1] + matrix->m[0][2];
+    *y = ori_x * matrix->m[1][0] + ori_y * matrix->m[1][1] + matrix->m[1][2];
+}
+
+void vg_lite_test_transform_retangle(vg_lite_rectangle_t* rect, const vg_lite_matrix_t* matrix)
+{
+    GPU_ASSERT_NULL(rect);
+    GPU_ASSERT_NULL(matrix);
+    float x1 = rect->x;
+    float y1 = rect->y;
+    float x2 = x1 + rect->width - 1;
+    float y2 = y1 + rect->height - 1;
+    vg_lite_test_transform_point(&x1, &y1, matrix);
+    vg_lite_test_transform_point(&x2, &y2, matrix);
+
+    float trans_x1 = MATH_MIN(x1, x2);
+    float trans_y1 = MATH_MIN(y1, y2);
+    float trans_x2 = MATH_MAX(x1, x2);
+    float trans_y2 = MATH_MAX(y1, y2);
+
+    rect->x = trans_x1;
+    rect->y = trans_y1;
+    rect->width = trans_x2 - trans_x1 + 1;
+    rect->height = trans_y2 - trans_y1 + 1;
 }
 
 /**********************
