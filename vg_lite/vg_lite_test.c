@@ -117,49 +117,6 @@ int vg_lite_test_run(struct gpu_test_context_s* ctx)
  *   STATIC FUNCTIONS
  **********************/
 
-static bool vg_lite_test_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item)
-{
-    if (item->feature != gcFEATURE_BIT_VG_NONE && !vg_lite_query_feature(item->feature)) {
-        GPU_LOG_WARN("Skipping test case: %s (feature %s not supported)", item->name, vg_lite_test_feature_string(item->feature));
-        vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT);
-        return true;
-    }
-
-    GPU_LOG_INFO("Running test case: %s", item->name);
-
-    uint32_t start_tick = gpu_tick_get();
-    vg_lite_error_t error = item->on_setup(ctx);
-    ctx->prepare_tick = gpu_tick_elaps(start_tick);
-
-    if (error == VG_LITE_SUCCESS) {
-        start_tick = gpu_tick_get();
-        error = vg_lite_finish();
-        ctx->finish_tick = gpu_tick_elaps(start_tick);
-    }
-
-    if (item->on_teardown) {
-        item->on_teardown(ctx);
-    }
-
-    if (error == VG_LITE_SUCCESS) {
-        GPU_LOG_INFO("Test case '%s' PASS", item->name);
-    } else {
-        GPU_LOG_ERROR("Test case '%s' FAILED: %d (%s)", item->name, error, vg_lite_test_error_string(error));
-    }
-
-    vg_lite_test_context_record(ctx, item, error);
-
-    if (ctx->gpu_ctx->param.screenshot_en) {
-        struct gpu_buffer_s screenshot_buffer;
-        vg_lite_test_vg_buffer_to_gpu_buffer(&screenshot_buffer, &ctx->target_buffer);
-        gpu_screenshot(ctx->gpu_ctx->param.output_dir, item->name, &screenshot_buffer);
-    }
-
-    vg_lite_test_context_cleanup(ctx);
-
-    return error == VG_LITE_SUCCESS;
-}
-
 static int vg_lite_test_name_to_index(const struct vg_lite_test_item_s** group, int group_size, const char* name)
 {
     if (!name) {
@@ -221,9 +178,7 @@ static bool vg_lite_test_iter_next(struct vg_lite_test_iter_s* iter)
 
 static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
 {
-    struct vg_lite_test_context_s vg_lite_ctx = { 0 };
-    vg_lite_ctx.gpu_ctx = ctx;
-    vg_lite_test_context_setup(&vg_lite_ctx);
+    struct vg_lite_test_context_s* vg_lite_ctx = vg_lite_test_context_create(ctx);
 
     /* Import testcase entry */
 
@@ -245,10 +200,10 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
     iter.total_loop_count = ctx->param.run_loop_count;
 
     while (vg_lite_test_iter_next(&iter)) {
-        if (!vg_lite_test_run_item(&vg_lite_ctx, iter.item)) {
+        if (!vg_lite_test_context_run_item(vg_lite_ctx, iter.item)) {
             break;
         }
     }
 
-    vg_lite_test_context_teardown(&vg_lite_ctx);
+    vg_lite_test_context_destroy(vg_lite_ctx);
 }

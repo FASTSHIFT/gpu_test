@@ -60,29 +60,32 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_test_load_image(&ctx->src_buffer, image_bgra8888_48x480, IMAGE_WIDTH, IMAGE_HEIGHT, VG_LITE_BGRA8888, IMAGE_STRIDE);
+    vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
+    vg_lite_buffer_t* src_buffer = vg_lite_test_context_get_src_buffer(ctx);
+
+    vg_lite_test_load_image(src_buffer, image_bgra8888_48x480, IMAGE_WIDTH, IMAGE_HEIGHT, VG_LITE_BGRA8888, IMAGE_STRIDE);
 
     vg_lite_matrix_t matrix;
     vg_lite_identity(&matrix);
 
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, NULL, 0xFFFFFFFF));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, NULL, 0xFFFFFFFF));
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(
-            &ctx->target_buffer,
-            &ctx->src_buffer,
+            target_buffer,
+            src_buffer,
             &matrix,
             VG_LITE_BLEND_SRC_OVER,
             0,
             VG_LITE_FILTER_BI_LINEAR));
 
-    ctx->src_buffer.image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
+    src_buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
 
     vg_lite_translate(50, 0, &matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(
-            &ctx->target_buffer,
-            &ctx->src_buffer,
+            target_buffer,
+            src_buffer,
             &matrix,
             VG_LITE_BLEND_SRC_OVER,
             0x1F1F1F1F,

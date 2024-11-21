@@ -33,6 +33,7 @@ extern "C" {
  *********************/
 
 #include <vg_lite.h>
+#include <stdbool.h>
 
 /*********************
  *      DEFINES
@@ -55,17 +56,7 @@ extern "C" {
 
 struct gpu_test_context_s;
 struct vg_lite_test_path_s;
-
-struct vg_lite_test_context_s {
-    struct gpu_test_context_s* gpu_ctx;
-    vg_lite_buffer_t target_buffer;
-    vg_lite_buffer_t src_buffer;
-    struct vg_lite_test_path_s* path;
-    uint32_t prepare_tick;
-    uint32_t finish_tick;
-    char remark_text[128];
-    void* user_data;
-};
+struct vg_lite_test_context_s;
 
 typedef vg_lite_error_t (*vg_lite_test_func_t)(struct vg_lite_test_context_s* ctx);
 
@@ -82,38 +73,67 @@ struct vg_lite_test_item_s {
  **********************/
 
 /**
- * @brief Initialize the test context
- * @param ctx The test context to initialize
+ * @brief Create a new test context
+ * @param gpu_ctx The GPU test context to use
+ * @return The new test context
  */
-void vg_lite_test_context_setup(struct vg_lite_test_context_s* ctx);
+struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_context_s* gpu_ctx);
 
 /**
- * @brief Run a test case
+ * @brief Destroy a test context
+ * @param ctx The test context to destroy
+ */
+void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx);
+
+/**
+ * @brief Run a test case item
  * @param ctx The test context to use
+ * @param item The test case item to run
+ * @return True if the test case passed, false if it failed
  */
-void vg_lite_test_context_teardown(struct vg_lite_test_context_s* ctx);
+bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item);
 
 /**
- * @brief Cleanup the test context
- * @param ctx The test context to reset
- * @note This function should be called after each test case to ensure a clean state for the next test case.
+ * @brief Get the target buffer for the test case
+ * @param ctx The test context to use
+ * @return The target buffer for the test case
  */
-void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx);
+vg_lite_buffer_t* vg_lite_test_context_get_target_buffer(struct vg_lite_test_context_s* ctx);
 
 /**
- * @brief Record the test context
- * @param ctx The test context to record
- * @param item The test case item that was run
- * @param error The error code of the test case
+ * @brief Get the source buffer for the test case
+ * @param ctx The test context to use
+ * @return The source buffer for the test case
  */
-void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item, vg_lite_error_t error);
+vg_lite_buffer_t* vg_lite_test_context_get_src_buffer(struct vg_lite_test_context_s* ctx);
 
 /**
  * @brief Get the test path for the given format
  * @param format The format of the test path
  * @return The test path for the given format
  */
-struct vg_lite_test_path_s* vg_lite_test_context_get_path(struct vg_lite_test_context_s* ctx, vg_lite_format_t format);
+struct vg_lite_test_path_s* vg_lite_test_context_init_path(struct vg_lite_test_context_s* ctx, vg_lite_format_t format);
+
+/**
+ * @brief Get the test path for the given format
+ * @param ctx The test context to use
+ * @return The test path for the given format
+ */
+struct vg_lite_test_path_s* vg_lite_test_context_get_path(struct vg_lite_test_context_s* ctx);
+
+/**
+ * @brief Set the user data for the test context
+ * @param ctx The test context to use
+ * @param user_data The user data to set
+ */
+void vg_lite_test_context_set_user_data(struct vg_lite_test_context_s* ctx, void* user_data);
+
+/**
+ * @brief Get the user data for the test context
+ * @param ctx The test context to use
+ * @return The user data for the test context
+ */
+void* vg_lite_test_context_get_user_data(struct vg_lite_test_context_s* ctx);
 
 /**********************
  *      MACROS

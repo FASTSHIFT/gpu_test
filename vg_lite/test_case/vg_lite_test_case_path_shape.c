@@ -59,7 +59,7 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_test_path_t* path = vg_lite_test_context_get_path(ctx, VG_LITE_FP32);
+    vg_lite_test_path_t* path = vg_lite_test_context_init_path(ctx, VG_LITE_FP32);
 
     vg_lite_test_path_set_bounding_box(path, 0, 0, 240, 240);
 
@@ -69,9 +69,11 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_matrix_t matrix;
     vg_lite_identity(&matrix);
 
+    vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
+
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_draw(
-            &ctx->target_buffer,
+            target_buffer,
             vg_lite_test_path_get_path(path),
             VG_LITE_FILL_EVEN_ODD,
             &matrix,
@@ -85,7 +87,7 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_draw(
-            &ctx->target_buffer,
+            target_buffer,
             vg_lite_test_path_get_path(path),
             VG_LITE_FILL_EVEN_ODD,
             &matrix,
@@ -100,7 +102,7 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_draw(
-            &ctx->target_buffer,
+            target_buffer,
             vg_lite_test_path_get_path(path),
             VG_LITE_FILL_EVEN_ODD,
             &matrix,

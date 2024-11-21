@@ -78,13 +78,14 @@ static vg_lite_error_t draw_image(struct vg_lite_test_context_s* ctx, vg_lite_bu
         .height = image->height,
     };
 
-    vg_lite_path_t* vg_path = vg_lite_test_path_get_path(ctx->path);
+    vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
+    vg_lite_path_t* vg_path = vg_lite_test_path_get_path(vg_lite_test_context_get_path(ctx));
 
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(&ctx->target_buffer, &rect, bg_color));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, &rect, bg_color));
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(
-            &ctx->target_buffer,
+            target_buffer,
             image,
             &matrix,
             VG_LITE_BLEND_SRC_OVER,
@@ -94,7 +95,7 @@ static vg_lite_error_t draw_image(struct vg_lite_test_context_s* ctx, vg_lite_bu
     vg_lite_translate(image->width, 0, &matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit_rect(
-            &ctx->target_buffer,
+            target_buffer,
             image,
             &rect_image,
             &matrix,
@@ -105,7 +106,7 @@ static vg_lite_error_t draw_image(struct vg_lite_test_context_s* ctx, vg_lite_bu
     vg_lite_translate(image->width, 0, &matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_draw_pattern(
-            &ctx->target_buffer,
+            target_buffer,
             vg_path,
             VG_LITE_FILL_EVEN_ODD,
             &matrix,
@@ -122,10 +123,10 @@ static vg_lite_error_t draw_image(struct vg_lite_test_context_s* ctx, vg_lite_bu
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_buffer_t* image = &ctx->src_buffer;
+    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
     vg_lite_test_buffer_alloc(image, 64, 64, VG_LITE_A8, VG_LITE_TEST_STRIDE_AUTO);
 
-    ctx->src_buffer.image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
+    image->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
     uint8_t* dst = image->memory;
 
     /* Fill gradient image with alpha values */
@@ -135,7 +136,7 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         dst += image->stride;
     }
 
-    vg_lite_test_path_t* path = vg_lite_test_context_get_path(ctx, VG_LITE_FP32);
+    vg_lite_test_path_t* path = vg_lite_test_context_init_path(ctx, VG_LITE_FP32);
     vg_lite_test_path_set_bounding_box(path, 0, 0, 64, 64);
     vg_lite_test_path_append_circle(path, 32, 32, 32, 32);
     vg_lite_test_path_end(path);

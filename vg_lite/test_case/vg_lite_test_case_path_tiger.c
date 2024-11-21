@@ -64,9 +64,11 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_translate(150, 150, &matrix);
     vg_lite_scale(3.5, 3.5, &matrix);
 
+    vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
+
     for (int i = 0; i < TIGER_PATH_COUNT; i++) {
         VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_draw(
-            &ctx->target_buffer,
+            target_buffer,
             &tiger_path[i],
             VG_LITE_FILL_EVEN_ODD,
             &matrix,
