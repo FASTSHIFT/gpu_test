@@ -64,7 +64,13 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         (vg_lite_uint32_t*)imgae_cogwheel_index8_color_table));
 
     vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_load_image(image, imgae_cogwheel_index8_map, IMAGE_WIDTH, IMAGE_HEIGHT, VG_LITE_INDEX_8, IMAGE_STRIDE);
+    vg_lite_test_load_image(
+        image,
+        imgae_cogwheel_index8_map,
+        IMAGE_COGWHEEL_INDEX8_WIDTH,
+        IMAGE_COGWHEEL_INDEX8_HEIGHT,
+        IMAGE_COGWHEEL_INDEX8_FORMAT,
+        IMAGE_COGWHEEL_INDEX8_STRIDE);
 
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);

@@ -26,9 +26,10 @@
 
 #include <stdint.h>
 
-#define IMAGE_WIDTH 100
-#define IMAGE_HEIGHT 100
-#define IMAGE_STRIDE (IMAGE_WIDTH * sizeof(uint8_t))
+#define IMAGE_COGWHEEL_INDEX8_FORMAT VG_LITE_INDEX_8
+#define IMAGE_COGWHEEL_INDEX8_WIDTH 100
+#define IMAGE_COGWHEEL_INDEX8_HEIGHT 100
+#define IMAGE_COGWHEEL_INDEX8_STRIDE (IMAGE_COGWHEEL_INDEX8_WIDTH * sizeof(uint8_t))
 
 /* clang-format off */
 

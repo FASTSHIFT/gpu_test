@@ -21,16 +21,17 @@
  * SOFTWARE.
  */
 
-#ifndef IMAGE_A8_H
-#define IMAGE_A8_H
+#ifndef IMAGE_CIRCLE_A8_H
+#define IMAGE_CIRCLE_A8_H
 
 #include <stdint.h>
 
-#define IMAGE_WIDTH 100
-#define IMAGE_HEIGHT 100
-#define IMAGE_STRIDE (IMAGE_WIDTH * sizeof(uint8_t))
+#define IMAGE_CIRCLE_A8_FORMAT VG_LITE_A8
+#define IMAGE_CIRCLE_A8_WIDTH 100
+#define IMAGE_CIRCLE_A8_HEIGHT 100
+#define IMAGE_CIRCLE_A8_STRIDE (IMAGE_CIRCLE_A8_WIDTH * sizeof(uint8_t))
 
-static const uint32_t image_a8_100x100[] = {
+static const uint32_t image_circle_a8_map[] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, /* 1 */
     0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,

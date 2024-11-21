@@ -25,7 +25,7 @@
  *      INCLUDES
  *********************/
 
-#include "../resource/image_a8.h"
+#include "../resource/image_circle_a8.h"
 #include "../vg_lite_test_context.h"
 #include "../vg_lite_test_path.h"
 #include "../vg_lite_test_utils.h"
@@ -103,7 +103,13 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
             0xFFFF0000));
 
     vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_load_image(image, image_a8_100x100, IMAGE_WIDTH, IMAGE_HEIGHT, VG_LITE_A8, IMAGE_STRIDE);
+    vg_lite_test_load_image(
+        image,
+        image_circle_a8_map,
+        IMAGE_CIRCLE_A8_WIDTH,
+        IMAGE_CIRCLE_A8_HEIGHT,
+        IMAGE_CIRCLE_A8_FORMAT,
+        IMAGE_CIRCLE_A8_STRIDE);
 
     vg_lite_translate(250, 250, &matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(

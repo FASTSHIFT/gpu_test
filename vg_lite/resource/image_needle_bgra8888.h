@@ -26,13 +26,14 @@
 
 #include <stdint.h>
 
-#define IMAGE_WIDTH 48
-#define IMAGE_HEIGHT 480
-#define IMAGE_STRIDE (IMAGE_WIDTH * sizeof(uint32_t))
+#define IMAGE_NEEDLE_BGRA8888_FORMAT VG_LITE_BGRA8888
+#define IMAGE_NEEDLE_BGRA8888_WIDTH 48
+#define IMAGE_NEEDLE_BGRA8888_HEIGHT 480
+#define IMAGE_NEEDLE_BGRA8888_STRIDE (IMAGE_NEEDLE_BGRA8888_WIDTH * sizeof(uint32_t))
 
 /* clang-format off */
 
-static const uint8_t image_rgb_48x480[] = {
+static const uint8_t image_needle_bgra8888_map[] = {
     0,  0,  0,   0,   0,  0,  0,   0,   0,  0,  0,   0,   0,  0,  0,   0,
     0,  0,  0,   0,   0,  0,  0,   0,   0,  0,  0,   0,   0,  0,  0,   0,
     0,  0,  0,   0,   0,  0,  0,   0,   0,  0,  0,   0,   0,  0,  0,   0,
