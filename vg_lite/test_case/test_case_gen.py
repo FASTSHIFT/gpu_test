@@ -94,5 +94,5 @@ if __name__ == "__main__":
     
     if test_case_name:
         generate_test_case_file(test_case_name)
-    else:
-        update_inc_file()  # Only refresh the inc file if no test_case_name is provided
+
+    update_inc_file()  # Only refresh the inc file if no test_case_name is provided
