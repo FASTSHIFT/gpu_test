@@ -358,6 +358,11 @@ void vg_lite_test_load_image(
         dest += buffer->stride;
         src += image_stride;
     }
+
+    if (format == VG_LITE_A4 || format == VG_LITE_A8) {
+        GPU_LOG_INFO("Image loaded with alpha format");
+        buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
+    }
 }
 
 vg_lite_error_t vg_lite_test_idle_flush(void)
