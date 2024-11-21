@@ -166,7 +166,7 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
         for (int x = 0; x < target_buffer.width; x++) {
             if (*target_row != *loaded_row) {
                 snprintf(ctx->remark_text, sizeof(ctx->remark_text),
-                    "Screenshot pixel not match in (%d %d) target: %08" PRIx32 " vs loaded: %08" PRIx32,
+                    "Screenshot pixel not match in (X%d Y%d) target: %08" PRIx32 " vs loaded: %08" PRIx32,
                     x, y, *target_row, *loaded_row);
                 GPU_LOG_ERROR("%s", ctx->remark_text);
 
@@ -215,13 +215,13 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
         item->on_teardown(ctx);
     }
 
+    const char* error_str = vg_lite_test_error_string(error);
+
     if (error == VG_LITE_SUCCESS) {
         GPU_LOG_INFO("Test case '%s' render success", item->name);
     } else {
-        GPU_LOG_ERROR("Test case '%s' render success: %d (%s)", item->name, error, vg_lite_test_error_string(error));
+        GPU_LOG_ERROR("Test case '%s' render success: %d (%s)", item->name, error, error_str);
     }
-
-    const char* error_str = vg_lite_test_error_string(error);
 
     if (ctx->gpu_ctx->param.screenshot_en) {
         if (!vg_lite_test_context_check_screenshot(ctx, item->name)) {
