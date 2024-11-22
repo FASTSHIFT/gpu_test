@@ -61,6 +61,7 @@ struct gpu_test_param_s {
     int img_height;
     int run_loop_count;
     bool screenshot_en;
+    int cpu_freq;
 };
 
 struct gpu_test_context_s {

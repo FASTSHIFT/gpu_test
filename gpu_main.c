@@ -87,16 +87,20 @@ int main(int argc, char* argv[])
 static void show_usage(const char* progname, int exitcode)
 {
     printf("\nUsage: %s"
-           "-m <string> -o <string> -t <string> -i <string> -s -c <int>\n",
+           " -m <string> -o <string> -t <string> -s\n"
+           " --target <string> --loop-count <int> --cpu-freq <int>\n",
         progname);
+
     printf("\nWhere:\n");
     printf("  -m <string> Test mode: default; stress.\n");
     printf("  -o <string> GPU report file output path, default is " GPU_OUTPUT_DIR_DEFAULT "\n");
     printf("  -t <string> Testcase name.\n");
-    printf("  -i <string> Test output image size(px), default is 480x480. Example: "
-           "<decimal-value width>x<decimal-value height>\n");
     printf("  -s Enable screenshot.\n");
-    printf("  -c <int> Stress mode loop count, default is 1000.\n");
+
+    printf("  --target <string> Test output image size(px), default is 480x480. Example: "
+           "<decimal-value width>x<decimal-value height>\n");
+    printf("  --loop-count <int> Stress mode loop count, default is 1000.\n");
+    printf("  --cpu-freq <int> CPU frequency in MHz, default is 200.\n");
 
     exit(exitcode);
 }
@@ -125,6 +129,52 @@ static enum gpu_test_mode_e gpu_test_string_to_mode(const char* str)
 }
 
 /**
+ * @brief Parse long command line arguments
+ * @param argc The number of arguments
+ * @param argv The arguments
+ * @param ch The option character
+ * @param longopts The long options
+ * @param longindex The index of the long option
+ * @param param The test parameters
+ */
+static void parse_long_commandline(
+    int argc, char** argv,
+    int ch,
+    const struct option* longopts,
+    int longindex,
+    struct gpu_test_param_s* param)
+{
+    switch (longindex) {
+
+    case 0: {
+        int width = 0;
+        int height = 0;
+        int converted = sscanf(optarg, "%dx%d", &width, &height);
+        if (converted == 2 && width >= 0 && height >= 0) {
+            param->img_width = width;
+            param->img_height = height;
+        } else {
+            GPU_LOG_ERROR("Error image size: %s", optarg);
+            show_usage(argv[0], EXIT_FAILURE);
+        }
+    } break;
+
+    case 1:
+        param->run_loop_count = atoi(optarg);
+        break;
+
+    case 2:
+        param->cpu_freq = atoi(optarg);
+        break;
+
+    default:
+        GPU_LOG_WARN("Unknown longindex: %d", longindex);
+        show_usage(argv[0], EXIT_FAILURE);
+        break;
+    }
+}
+
+/**
  * @brief Parse command line arguments
  * @param argc The number of arguments
  * @param argv The arguments
@@ -139,10 +189,24 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     param->img_width = GPU_TEST_DESIGN_WIDTH;
     param->img_height = GPU_TEST_DESIGN_WIDTH;
     param->run_loop_count = 1000;
+    param->cpu_freq = 200;
 
     int ch;
-    while ((ch = getopt(argc, argv, "m:t:o:i:sc:h")) != -1) {
+    int longindex = 0;
+    const char* optstring = "m:o:t:sh";
+    const struct option longopts[] = {
+        { "target", required_argument, NULL, 0 },
+        { "loop-count", required_argument, NULL, 0 },
+        { "cpu-freq", required_argument, NULL, 0 },
+        { 0, 0, NULL, 0 }
+    };
+
+    while ((ch = getopt_long(argc, argv, optstring, longopts, &longindex)) != -1) {
         switch (ch) {
+        case 0:
+            parse_long_commandline(argc, argv, ch, longopts, longindex, param);
+            break;
+
         case 'm':
             param->mode = gpu_test_string_to_mode(optarg);
             break;
@@ -155,25 +219,8 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
             param->testcase_name = optarg;
             break;
 
-        case 'i': {
-            int width = 0;
-            int height = 0;
-            int converted = sscanf(optarg, "%dx%d", &width, &height);
-            if (converted == 2 && width >= 0 && height >= 0) {
-                param->img_width = width;
-                param->img_height = height;
-            } else {
-                GPU_LOG_ERROR("Error image size: %s", optarg);
-                show_usage(argv[0], EXIT_FAILURE);
-            }
-        } break;
-
         case 's':
             param->screenshot_en = true;
-            break;
-
-        case 'c':
-            param->run_loop_count = atoi(optarg);
             break;
 
         case 'h':
@@ -207,4 +254,5 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     GPU_LOG_INFO("Testcase name: %s", param->testcase_name);
     GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
     GPU_LOG_INFO("Loop count: %d", param->run_loop_count);
+    GPU_LOG_INFO("CPU frequency: %d MHz", param->cpu_freq);
 }
