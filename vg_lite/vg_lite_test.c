@@ -212,5 +212,5 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
 
     vg_lite_test_context_destroy(vg_lite_ctx);
 
-    GPU_LOG_INFO("Test result: %d failed / %d total", iter.failed_count, iter.current_loop_count);
+    GPU_LOG_WARN("Test result: %d failed / %d total", iter.failed_count, iter.current_loop_count - 1);
 }
