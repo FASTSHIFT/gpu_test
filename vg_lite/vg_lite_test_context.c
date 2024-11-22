@@ -83,6 +83,8 @@ static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, cons
 
 struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_context_s* gpu_ctx)
 {
+    GPU_ASSERT_NULL(gpu_ctx);
+
     struct vg_lite_test_context_s* ctx = malloc(sizeof(struct vg_lite_test_context_s));
     GPU_ASSERT_NULL(ctx);
     memset(ctx, 0, sizeof(struct vg_lite_test_context_s));
@@ -93,7 +95,6 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
         gpu_ctx->param.img_height / (float)GPU_TEST_DESIGN_HEIGHT,
         &ctx->matrix);
 
-    GPU_ASSERT_NULL(gpu_ctx);
     vg_lite_test_buffer_alloc(
         &ctx->target_buffer,
         ctx->gpu_ctx->param.img_width,
