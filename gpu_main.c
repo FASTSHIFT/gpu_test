@@ -69,7 +69,10 @@ int main(int argc, char* argv[])
     struct gpu_test_context_s ctx = { 0 };
     parse_commandline(argc, argv, &ctx.param);
     gpu_dir_create(ctx.param.output_dir);
-    return gpu_test_run(&ctx);
+    gpu_test_context_setup(&ctx);
+    int retval = gpu_test_run(&ctx);
+    gpu_test_context_teardown(&ctx);
+    return retval;
 }
 
 /**********************

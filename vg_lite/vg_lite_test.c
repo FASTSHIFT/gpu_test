@@ -39,16 +39,6 @@
  *      DEFINES
  *********************/
 
-/* Enable VG-Lite custom external 'gpu_init()' function */
-#ifndef VG_LITE_TEST_USE_GPU_INIT
-#define VG_LITE_TEST_USE_GPU_INIT 1
-
-#ifndef VG_LITE_TEST_USE_GPU_INIT_ONCE
-#define VG_LITE_TEST_USE_GPU_INIT_ONCE 0
-#endif
-
-#endif /* VG_LITE_TEST_USE_GPU_INIT */
-
 /**********************
  *      TYPEDEFS
  **********************/
@@ -85,31 +75,8 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx);
 
 int vg_lite_test_run(struct gpu_test_context_s* ctx)
 {
-#if VG_LITE_TEST_USE_GPU_INIT
-#if VG_LITE_TEST_USE_GPU_INIT_ONCE
-    static bool is_initialized = false;
-    if (!is_initialized) {
-#endif
-        /* Initialize the GPU */
-        extern void gpu_init(void);
-        GPU_LOG_INFO("Initializing GPU");
-        gpu_init();
-#if VG_LITE_TEST_USE_GPU_INIT_ONCE
-        is_initialized = true;
-    }
-#endif
-#endif
-
     vg_lite_test_dump_info();
     vg_lite_test_run_group(ctx);
-
-#if VG_LITE_TEST_USE_GPU_INIT && !VG_LITE_TEST_USE_GPU_INIT_ONCE
-    /* Deinitialize the GPU */
-    extern void gpu_deinit(void);
-    GPU_LOG_INFO("Deinitializing GPU");
-    gpu_deinit();
-#endif
-
     GPU_LOG_INFO("GPU test finish");
     return 0;
 }
