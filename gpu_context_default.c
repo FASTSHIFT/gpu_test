@@ -27,6 +27,7 @@
 
 #ifndef GPU_TEST_CONTEXT_DEFAULT_DISABLE
 
+#include "gpu_assert.h"
 #include "gpu_context.h"
 #include "gpu_fb.h"
 #include "gpu_log.h"
@@ -58,6 +59,8 @@
 
 void gpu_test_context_setup(struct gpu_test_context_s* ctx)
 {
+    GPU_ASSERT_NULL(ctx);
+
     GPU_LOG_INFO("Initializing GPU");
     extern void gpu_init(void);
     gpu_init();
@@ -73,6 +76,8 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
 
 void gpu_test_context_teardown(struct gpu_test_context_s* ctx)
 {
+    GPU_ASSERT_NULL(ctx);
+
     if (ctx->fb) {
         gpu_fb_destroy(ctx->fb);
         ctx->fb = NULL;

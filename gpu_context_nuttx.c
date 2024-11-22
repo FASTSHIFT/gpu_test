@@ -27,7 +27,9 @@
  *      INCLUDES
  *********************/
 
+#include "gpu_assert.h"
 #include "gpu_context.h"
+#include "gpu_fb.h"
 #include "gpu_log.h"
 #include "gpu_tick.h"
 #include <inttypes.h>
@@ -66,6 +68,16 @@ static uint32_t g_cpu_freq = 200; /* default CPU frequency 200 MHz */
 
 void gpu_test_context_setup(struct gpu_test_context_s* ctx)
 {
+    GPU_ASSERT_NULL(ctx);
+
+    if (ctx->param.fbdev_path) {
+        ctx->fb = gpu_fb_create(ctx->param.fbdev_path);
+
+        if (ctx->fb) {
+            gpu_fb_get_buffer(ctx->fb, &ctx->target_buffer);
+        }
+    }
+
     static bool initialized = false;
 
 #ifdef CONFIG_ARCH_SIM
@@ -112,6 +124,13 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
 
 void gpu_test_context_teardown(struct gpu_test_context_s* ctx)
 {
+    GPU_ASSERT_NULL(ctx);
+
+    if (ctx->fb) {
+        gpu_fb_destroy(ctx->fb);
+        ctx->fb = NULL;
+    }
+
 #ifdef CONFIG_ARCH_SIM
     extern void gpu_deinit(void);
     GPU_LOG_INFO("Deinitializing GPU");
