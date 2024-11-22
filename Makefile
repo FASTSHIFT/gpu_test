@@ -28,6 +28,8 @@ endif
 
 CFLAGS += -DGPU_TEST_CONTEXT_DEFAULT_DISABLE=1
 CFLAGS += -DGPU_TEST_CONTEXT_NUTTX_ENABLE=1
+CFLAGS += -DGPU_OUTPUT_DIR_DEFAULT=\"/data/gpu\"
+CFLAGS += -DGPU_LOG_USE_SYSLOG=1
 
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/../external/libpng
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/../external/libpng/libpng
@@ -40,6 +42,7 @@ MODULE = $(CONFIG_TESTING_GPU_TEST)
 MAINSRC = gpu_main.c
 
 CSRCS += $(wildcard vg_lite/*.c)
+CSRCS += $(wildcard vg_lite/*/*.c)
 CSRCS += $(filter-out gpu_main.c, $(wildcard *.c))
 
 include $(APPDIR)/Application.mk

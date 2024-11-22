@@ -55,3 +55,8 @@ dkms.conf
 /build/
 /.vscode/
 /gpu/
+
+# Nuttx build files
+.built
+.depend
+Make.dep

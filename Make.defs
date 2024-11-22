@@ -1,5 +1,5 @@
 ############################################################################
-# apps/graphics/vg_lite_tvg/Make.defs
+# apps/testing/gpu_test/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,6 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_GRAPHICS_VG_LITE_TVG),)
-CONFIGURED_APPS += $(APPDIR)/graphics/vg_lite_tvg
+ifneq ($(CONFIG_TESTING_GPU_TEST),)
+CONFIGURED_APPS += $(APPDIR)/testing/gpu_test
 endif

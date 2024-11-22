@@ -73,15 +73,18 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
     initialized = false;
 #endif
 
-    if (!initialized) {
+    if (initialized) {
+        GPU_LOG_INFO("GPU already initialized");
         return;
     }
 
     initialized = true;
 
+#ifdef CONFIG_TESTING_GPU_TEST_CUSTOM_INIT
     GPU_LOG_INFO("Initializing GPU");
     extern void gpu_init(void);
     gpu_init();
+#endif
 
     if (ctx->param.cpu_freq <= 0) {
         GPU_LOG_ERROR("Invalid CPU frequency: %d", ctx->param.cpu_freq);
