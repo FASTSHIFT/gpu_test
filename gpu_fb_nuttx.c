@@ -116,14 +116,14 @@ failed:
 void gpu_fb_destroy(struct gpu_fb_s* fb)
 {
     GPU_ASSERT_NULL(fb);
-    if (fb->fd >= 0) {
-        GPU_LOG_INFO("close fd: %d", fb->fd);
-        close(fb->fd);
-    }
-
     if (fb->memory) {
         GPU_LOG_INFO("munmap memory: %p, size: %u", fb->memory, fb->pinfo.fblen);
         munmap(fb->memory, fb->pinfo.fblen);
+    }
+
+    if (fb->fd >= 0) {
+        GPU_LOG_INFO("close fd: %d", fb->fd);
+        close(fb->fd);
     }
 
     GPU_LOG_INFO("free fb: %p", fb);
