@@ -84,15 +84,13 @@ int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer)
     }
 
     /* Write the PNG image. */
-    int retval = png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL);
-
-    if (retval > 0) {
-        GPU_LOG_INFO("Screenshot saved to %s", path);
-    } else {
-        GPU_LOG_ERROR("Failed to save screenshot: %d", retval);
+    if (!png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL)) {
+        GPU_LOG_ERROR("Failed");
+        return -1;
     }
 
-    return retval;
+    GPU_LOG_INFO("Successed");
+    return 0;
 }
 
 struct gpu_buffer_s* gpu_screenshot_load(const char* path)

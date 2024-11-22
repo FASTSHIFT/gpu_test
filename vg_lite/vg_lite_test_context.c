@@ -58,7 +58,8 @@ struct vg_lite_test_context_s {
     uint32_t setup_tick;
     uint32_t draw_tick;
     uint32_t finish_tick;
-    char remark_text[256];
+    char vg_error_remark_text[64];
+    char screenshot_remark_text[192];
     void* user_data;
 };
 
@@ -67,7 +68,12 @@ struct vg_lite_test_context_s {
  **********************/
 
 static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx);
-static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item, const char* error_str);
+static void vg_lite_test_context_record(
+    struct vg_lite_test_context_s* ctx,
+    const struct vg_lite_test_item_s* item,
+    vg_lite_error_t error,
+    bool passed);
+static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* ctx, vg_lite_error_t error);
 
 /**********************
  *  STATIC VARIABLES
@@ -110,8 +116,9 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
             "Target Address,Source Address,"
             "Target Area,Source Area,"
             "Setup Time(ms),Draw Time(ms),Finish Time(ms),"
-            "Result,"
-            "Remark"
+            "VG-Lite Result,VG-Lite Remark,"
+            "Screenshot Result,"
+            "Result"
             "\n");
     }
 
@@ -150,18 +157,20 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
 
     struct gpu_buffer_s* loaded_buffer = gpu_screenshot_load(path);
     if (!loaded_buffer) {
-        gpu_screenshot_save(path, &target_buffer);
+        int ret = gpu_screenshot_save(path, &target_buffer);
+        snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
+            "Create: %s - %s", path, ret == 0 ? "SUCCESS" : "FAILED");
         return true;
     }
 
     if (target_buffer.width != loaded_buffer->width || target_buffer.height != loaded_buffer->height) {
-        snprintf(ctx->remark_text, sizeof(ctx->remark_text),
-            "Screenshot size not matched: %s target: W%dxH%d vs loaded: W%dxH%d",
+        snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
+            "Size not matched: %s target: W%dxH%d vs loaded: W%dxH%d",
             path,
             (int)target_buffer.width, (int)target_buffer.height,
             (int)loaded_buffer->width, (int)loaded_buffer->height);
 
-        GPU_LOG_ERROR("%s", ctx->remark_text);
+        GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
         goto failed;
     }
 
@@ -173,10 +182,10 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
 
         for (int x = 0; x < target_buffer.width; x++) {
             if (*target_row != *loaded_row) {
-                snprintf(ctx->remark_text, sizeof(ctx->remark_text),
-                    "Screenshot pixel not match in (X%d Y%d) target: %08" PRIx32 " vs loaded: %08" PRIx32,
+                snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
+                    "Pixel not match in (X%d Y%d) target: %08" PRIx32 " vs loaded: %08" PRIx32,
                     x, y, *target_row, *loaded_row);
-                GPU_LOG_ERROR("%s", ctx->remark_text);
+                GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
 
                 snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s_err.png", ctx->gpu_ctx->param.output_dir, name);
                 gpu_screenshot_save(path, &target_buffer);
@@ -193,6 +202,7 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
 
     retval = true;
     GPU_LOG_INFO("Screenshot check PASS: %s", path);
+    snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text), "SUCCESS");
 
 failed:
     gpu_buffer_free(loaded_buffer);
@@ -203,7 +213,7 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
 {
     if (item->feature != gcFEATURE_BIT_VG_NONE && !vg_lite_query_feature(item->feature)) {
         GPU_LOG_WARN("Skipping test case: %s (feature %s not supported)", item->name, vg_lite_test_feature_string(item->feature));
-        vg_lite_test_context_record(ctx, item, "NOT_SUPPORT");
+        vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT, true);
         return true;
     }
 
@@ -232,12 +242,11 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
         item->on_teardown(ctx);
     }
 
-    const char* error_str = vg_lite_test_error_string(error);
-
     if (error == VG_LITE_SUCCESS) {
         GPU_LOG_INFO("Test case '%s' render success", item->name);
     } else {
-        GPU_LOG_ERROR("Test case '%s' render failed: %d (%s)", item->name, error, error_str);
+        GPU_LOG_ERROR("Test case '%s' render failed: %d (%s)", item->name, error, vg_lite_test_error_string(error));
+        vg_lite_test_context_error_to_remark(ctx, error);
     }
 
     bool screenshot_cmp_pass = true;
@@ -245,15 +254,16 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
     if (ctx->gpu_ctx->param.screenshot_en) {
         screenshot_cmp_pass = vg_lite_test_context_check_screenshot(ctx, item->name);
         if (!screenshot_cmp_pass) {
-            error_str = "FAILED";
         }
     }
 
-    vg_lite_test_context_record(ctx, item, error_str);
+    bool passed = (error == VG_LITE_SUCCESS && screenshot_cmp_pass);
+
+    vg_lite_test_context_record(ctx, item, error, passed);
 
     vg_lite_test_context_cleanup(ctx);
 
-    return error == VG_LITE_SUCCESS && screenshot_cmp_pass;
+    return passed;
 }
 
 vg_lite_buffer_t* vg_lite_test_context_get_target_buffer(struct vg_lite_test_context_s* ctx)
@@ -325,7 +335,8 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     size_t target_size = ctx->target_buffer.stride * ctx->target_buffer.height;
     memset(ctx->target_buffer.memory, 0, target_size);
 
-    ctx->remark_text[0] = '\0';
+    ctx->vg_error_remark_text[0] = '\0';
+    ctx->screenshot_remark_text[0] = '\0';
     ctx->setup_tick = 0;
     ctx->draw_tick = 0;
     ctx->finish_tick = 0;
@@ -340,7 +351,11 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     }
 }
 
-static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item, const char* error_str)
+static void vg_lite_test_context_record(
+    struct vg_lite_test_context_s* ctx,
+    const struct vg_lite_test_item_s* item,
+    vg_lite_error_t error,
+    bool passed)
 {
     GPU_ASSERT_NULL(ctx);
     GPU_ASSERT_NULL(item);
@@ -349,18 +364,20 @@ static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, cons
         return;
     }
 
-    char result[256];
+    char result[512];
     snprintf(result, sizeof(result),
-        "%s,"
-        "%s,"
-        "%s,%s,"
-        "%p,%p,"
-        "%dx%d,%dx%d,"
-        "%0.3f,"
-        "%0.3f,"
-        "%0.3f,"
-        "%s,"
-        "%s\n",
+        "%s," /* Testcase */
+        "%s," /* Instructions */
+        "%s,%s," /* Target Format, Source Format */
+        "%p,%p," /* Target Address, Source Address */
+        "%dx%d,%dx%d," /* Target Area, Source Area */
+        "%0.3f," /* Setup Time(ms) */
+        "%0.3f," /* Draw Time(ms) */
+        "%0.3f," /* Finish Time(ms) */
+        "%s," /* VG-Lite Result */
+        "%s," /* VG-Lite Remark */
+        "%s," /* Screenshot Result */
+        "%s\n", /* Result */
         item->name,
         item->instructions,
         vg_lite_test_buffer_format_string(ctx->target_buffer.format),
@@ -374,8 +391,31 @@ static void vg_lite_test_context_record(struct vg_lite_test_context_s* ctx, cons
         ctx->setup_tick / 1000.0f,
         ctx->draw_tick / 1000.0f,
         ctx->finish_tick / 1000.0f,
-        error_str,
-        ctx->remark_text);
+        vg_lite_test_error_string(error),
+        ctx->vg_error_remark_text,
+        ctx->screenshot_remark_text,
+        passed ? "PASS" : "FAIL");
 
     gpu_recorder_write_string(ctx->gpu_ctx->recorder, result);
+}
+
+static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* ctx, vg_lite_error_t error)
+{
+    if (error == VG_LITE_SUCCESS) {
+        return;
+    }
+
+    if (error == VG_LITE_TIMEOUT) {
+        VG_LITE_TEST_CHECK_ERROR(vg_lite_dump_command_buffer());
+        return;
+    }
+
+    if (error == VG_LITE_OUT_OF_MEMORY || error == VG_LITE_OUT_OF_RESOURCES) {
+        vg_lite_uint32_t mem_size = 0;
+        VG_LITE_TEST_CHECK_ERROR(vg_lite_get_mem_size(&mem_size));
+        GPU_LOG_WARN("Memory available: %" PRIu32 " bytes", (uint32_t)mem_size);
+        snprintf(ctx->vg_error_remark_text, sizeof(ctx->vg_error_remark_text),
+            "Memory not enough: %" PRIu32 " bytes", (uint32_t)mem_size);
+        return;
+    }
 }
