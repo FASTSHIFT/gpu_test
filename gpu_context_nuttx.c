@@ -67,6 +67,12 @@ static uint32_t g_cpu_freq = 200; /* default CPU frequency 200 MHz */
 void gpu_test_context_setup(struct gpu_test_context_s* ctx)
 {
     static bool initialized = false;
+
+#ifdef CONFIG_ARCH_SIM
+    /* In simulation mode, we need to initialize the GPU all the time */
+    initialized = false;
+#endif
+
     if (!initialized) {
         return;
     }
@@ -103,6 +109,11 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
 
 void gpu_test_context_teardown(struct gpu_test_context_s* ctx)
 {
+#ifdef CONFIG_ARCH_SIM
+    extern void gpu_deinit(void);
+    GPU_LOG_INFO("Deinitializing GPU");
+    gpu_deinit();
+#endif
 }
 
 /**********************
