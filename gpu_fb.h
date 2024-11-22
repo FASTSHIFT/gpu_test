@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_CONTEXT_H
-#define GPU_CONTEXT_H
+#ifndef GPU_FB_H
+#define GPU_FB_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,62 +32,40 @@ extern "C" {
  *      INCLUDES
  *********************/
 
-#include "gpu_buffer.h"
-#include <stdbool.h>
-
 /*********************
  *      DEFINES
  *********************/
-
-#define GPU_TEST_DESIGN_WIDTH 480
-#define GPU_TEST_DESIGN_HEIGHT 480
 
 /**********************
  *      TYPEDEFS
  **********************/
 
-struct gpu_recorder_s;
 struct gpu_fb_s;
-
-enum gpu_test_mode_e {
-    GPU_TEST_MODE_DEFAULT = 0,
-    GPU_TEST_MODE_STRESS,
-};
-
-struct gpu_test_param_s {
-    enum gpu_test_mode_e mode;
-    const char* output_dir;
-    const char* testcase_name;
-    const char* fbdev_path;
-    int img_width;
-    int img_height;
-    int run_loop_count;
-    bool screenshot_en;
-    int cpu_freq;
-};
-
-struct gpu_test_context_s {
-    struct gpu_recorder_s* recorder;
-    struct gpu_fb_s* fb;
-    struct gpu_test_param_s param;
-    struct gpu_buffer_s target_buffer;
-};
+struct gpu_buffer_s;
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 
 /**
- * @brief Initialize the GPU test context.
- * @param ctx The GPU test context to initialize.
+ * Create a GPU framebuffer object
+ * @param path The path to the device to use
+ * @return The framebuffer object or NULL if an error occurred
  */
-void gpu_test_context_setup(struct gpu_test_context_s* ctx);
+struct gpu_fb_s* gpu_fb_create(const char* path);
 
 /**
- * @brief Deinitialize the GPU test context.
- * @param ctx The GPU test context to deinitialize.
+ * Destroy a GPU framebuffer object
+ * @param fb The framebuffer object to destroy
  */
-void gpu_test_context_teardown(struct gpu_test_context_s* ctx);
+void gpu_fb_destroy(struct gpu_fb_s* fb);
+
+/**
+ * Get the GPU buffer object associated with the framebuffer
+ * @param fb The framebuffer object
+ * @param buffer The buffer object to fill in
+ */
+void gpu_fb_get_buffer(const struct gpu_fb_s* fb, struct gpu_buffer_s* buffer);
 
 /**********************
  *      MACROS
@@ -97,4 +75,4 @@ void gpu_test_context_teardown(struct gpu_test_context_s* ctx);
 } /*extern "C"*/
 #endif
 
-#endif /*GPU_CONTEXT_H*/
+#endif /*GPU_FB_H*/

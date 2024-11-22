@@ -88,7 +88,7 @@ static void show_usage(const char* progname, int exitcode)
 {
     printf("\nUsage: %s"
            " -m <string> -o <string> -t <string> -s\n"
-           " --target <string> --loop-count <int> --cpu-freq <int>\n",
+           " --target <string> --loop-count <int> --cpu-freq <int> --fbdev <string>\\n",
         progname);
 
     printf("\nWhere:\n");
@@ -101,6 +101,7 @@ static void show_usage(const char* progname, int exitcode)
            "<decimal-value width>x<decimal-value height>\n");
     printf("  --loop-count <int> Stress mode loop count, default is 1000.\n");
     printf("  --cpu-freq <int> CPU frequency in MHz, default is 200.\n");
+    printf("  --fbdev <string> Framebuffer device path.\n");
 
     exit(exitcode);
 }
@@ -167,6 +168,10 @@ static void parse_long_commandline(
         param->cpu_freq = atoi(optarg);
         break;
 
+    case 3:
+        param->fbdev_path = optarg;
+        break;
+
     default:
         GPU_LOG_WARN("Unknown longindex: %d", longindex);
         show_usage(argv[0], EXIT_FAILURE);
@@ -198,6 +203,7 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
         { "target", required_argument, NULL, 0 },
         { "loop-count", required_argument, NULL, 0 },
         { "cpu-freq", required_argument, NULL, 0 },
+        { "fbdev", required_argument, NULL, 0 },
         { 0, 0, NULL, 0 }
     };
 
@@ -255,4 +261,5 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
     GPU_LOG_INFO("Loop count: %d", param->run_loop_count);
     GPU_LOG_INFO("CPU frequency: %d MHz", param->cpu_freq);
+    GPU_LOG_INFO("Framebuffer device: %s", param->fbdev_path);
 }

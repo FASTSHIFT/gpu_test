@@ -25,14 +25,16 @@
  *      INCLUDES
  *********************/
 
+#ifndef GPU_TEST_CONTEXT_DEFAULT_DISABLE
+
 #include "gpu_context.h"
+#include "gpu_fb.h"
 #include "gpu_log.h"
+#include <stddef.h>
 
 /*********************
  *      DEFINES
  *********************/
-
-#ifndef GPU_TEST_CONTEXT_DEFAULT_DISABLE
 
 /**********************
  *      TYPEDEFS
@@ -59,10 +61,23 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
     GPU_LOG_INFO("Initializing GPU");
     extern void gpu_init(void);
     gpu_init();
+
+    if (ctx->param.fbdev_path) {
+        ctx->fb = gpu_fb_create(ctx->param.fbdev_path);
+
+        if (ctx->fb) {
+            gpu_fb_get_buffer(ctx->fb, &ctx->target_buffer);
+        }
+    }
 }
 
 void gpu_test_context_teardown(struct gpu_test_context_s* ctx)
 {
+    if (ctx->fb) {
+        gpu_fb_destroy(ctx->fb);
+        ctx->fb = NULL;
+    }
+
     extern void gpu_deinit(void);
     GPU_LOG_INFO("Deinitializing GPU");
     gpu_deinit();
