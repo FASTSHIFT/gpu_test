@@ -6,6 +6,7 @@
 menuconfig TESTING_GPU_TEST
 	bool "GPU Auto Test"
 	select LIB_PNG
+	select ARCH_PERF_EVENTS
 	default n
 
 if TESTING_GPU_TEST
