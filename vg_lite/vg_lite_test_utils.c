@@ -64,6 +64,7 @@ static void vg_lite_test_buffer_format_bytes(
     uint32_t* bytes_align);
 
 static enum gpu_color_format_e vg_lite_test_vg_format_to_gpu_format(vg_lite_buffer_format_t format);
+static vg_lite_buffer_format_t vg_lite_test_gpu_format_to_vg_format(enum gpu_color_format_e format);
 
 /**********************
  *  STATIC VARIABLES
@@ -271,6 +272,20 @@ void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const
     gpu_buffer->height = vg_buffer->height;
     gpu_buffer->stride = vg_buffer->stride;
     gpu_buffer->format = vg_lite_test_vg_format_to_gpu_format(vg_buffer->format);
+}
+
+void vg_lite_test_gpu_buffer_to_vg_buffer(vg_lite_buffer_t* vg_buffer, const struct gpu_buffer_s* gpu_buffer)
+{
+    GPU_ASSERT_NULL(vg_buffer);
+    GPU_ASSERT_NULL(gpu_buffer);
+
+    memset(vg_buffer, 0, sizeof(vg_lite_buffer_t));
+    vg_buffer->memory = gpu_buffer->data;
+    vg_buffer->address = (vg_lite_uint32_t)(uintptr_t)gpu_buffer->data;
+    vg_buffer->width = gpu_buffer->width;
+    vg_buffer->height = gpu_buffer->height;
+    vg_buffer->stride = gpu_buffer->stride;
+    vg_buffer->format = vg_lite_test_gpu_format_to_vg_format(gpu_buffer->format);
 }
 
 const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format)
@@ -524,4 +539,26 @@ static enum gpu_color_format_e vg_lite_test_vg_format_to_gpu_format(vg_lite_buff
 #undef COLOR_FORMAT_MATCH
 
     return GPU_COLOR_FORMAT_UNKNOWN;
+}
+
+static vg_lite_buffer_format_t vg_lite_test_gpu_format_to_vg_format(enum gpu_color_format_e format)
+{
+#define COLOR_FORMAT_MATCH(FMT)  \
+    case GPU_COLOR_FORMAT_##FMT: \
+        return VG_LITE_##FMT;
+
+    switch (format) {
+        COLOR_FORMAT_MATCH(BGR565);
+        COLOR_FORMAT_MATCH(BGR888);
+        COLOR_FORMAT_MATCH(BGRA8888);
+        COLOR_FORMAT_MATCH(BGRX8888);
+        COLOR_FORMAT_MATCH(BGRA5658);
+
+    default:
+        break;
+    }
+
+#undef COLOR_FORMAT_MATCH
+
+    return VG_LITE_BGRA8888;
 }

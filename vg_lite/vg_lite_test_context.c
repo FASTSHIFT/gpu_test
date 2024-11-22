@@ -51,6 +51,7 @@
 
 struct vg_lite_test_context_s {
     struct gpu_test_context_s* gpu_ctx;
+    bool use_external_target_buffer;
     vg_lite_buffer_t target_buffer;
     vg_lite_buffer_t src_buffer;
     struct vg_lite_test_path_s* path;
@@ -101,12 +102,18 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
         gpu_ctx->param.img_height / (float)GPU_TEST_DESIGN_HEIGHT,
         &ctx->matrix);
 
-    vg_lite_test_buffer_alloc(
-        &ctx->target_buffer,
-        ctx->gpu_ctx->param.img_width,
-        ctx->gpu_ctx->param.img_height,
-        VG_LITE_BGRA8888,
-        VG_LITE_TEST_STRIDE_AUTO);
+    if (gpu_ctx->target_buffer.data) {
+        GPU_LOG_INFO("Using external target buffer");
+        vg_lite_test_gpu_buffer_to_vg_buffer(&ctx->target_buffer, &gpu_ctx->target_buffer);
+        ctx->use_external_target_buffer = true;
+    } else {
+        vg_lite_test_buffer_alloc(
+            &ctx->target_buffer,
+            ctx->gpu_ctx->param.img_width,
+            ctx->gpu_ctx->param.img_height,
+            VG_LITE_BGRA8888,
+            VG_LITE_TEST_STRIDE_AUTO);
+    }
 
     if (ctx->gpu_ctx->recorder) {
         gpu_recorder_write_string(ctx->gpu_ctx->recorder,
@@ -132,7 +139,9 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
 void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
 {
     GPU_ASSERT_NULL(ctx);
-    vg_lite_test_buffer_free(&ctx->target_buffer);
+    if (!ctx->use_external_target_buffer) {
+        vg_lite_test_buffer_free(&ctx->target_buffer);
+    }
 
     if (ctx->path) {
         vg_lite_test_path_destroy(ctx->path);

@@ -67,6 +67,7 @@ struct gpu_test_param_s {
 struct gpu_test_context_s {
     struct gpu_recorder_s* recorder;
     struct gpu_test_param_s param;
+    struct gpu_buffer_s target_buffer;
 };
 
 /**********************

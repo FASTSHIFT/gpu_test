@@ -111,11 +111,18 @@ void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_
 void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer);
 
 /**
- * @brief Copy a VG Lite buffer to a GPU buffer.
+ * @brief Convert a VG Lite buffer to a GPU buffer.
  * @param gpu_buffer The GPU buffer to be copied.
  * @param vg_buffer The VG Lite buffer to be copied.
  */
 void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const vg_lite_buffer_t* vg_buffer);
+
+/**
+ * @brief Convert a GPU buffer to a VG Lite buffer.
+ * @param vg_buffer The VG Lite buffer to be copied.
+ * @param gpu_buffer The GPU buffer to be copied.
+ */
+void vg_lite_test_gpu_buffer_to_vg_buffer(vg_lite_buffer_t* vg_buffer, const struct gpu_buffer_s* gpu_buffer);
 
 /**
  * @breif Convert a VG Lite buffer format to a string.
