@@ -253,8 +253,6 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
 
     if (ctx->gpu_ctx->param.screenshot_en) {
         screenshot_cmp_pass = vg_lite_test_context_check_screenshot(ctx, item->name);
-        if (!screenshot_cmp_pass) {
-        }
     }
 
     bool passed = (error == VG_LITE_SUCCESS && screenshot_cmp_pass);
