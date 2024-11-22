@@ -407,6 +407,7 @@ static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* 
 
     if (error == VG_LITE_TIMEOUT) {
         VG_LITE_TEST_CHECK_ERROR(vg_lite_dump_command_buffer());
+        snprintf(ctx->vg_error_remark_text, sizeof(ctx->vg_error_remark_text), "See log for command buffer dump");
         return;
     }
 
