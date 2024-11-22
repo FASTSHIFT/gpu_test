@@ -97,7 +97,7 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
 
     vg_lite_matrix_t matrix;
-    vg_lite_test_context_get_transform(ctx, &matrix);
+    vg_lite_identity(&matrix);
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_blit(target_buffer, image, &matrix, VG_LITE_BLEND_SRC_OVER, 0, VG_LITE_FILTER_BI_LINEAR));
 
     return VG_LITE_SUCCESS;
