@@ -242,13 +242,6 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
         }
     }
 
-    if (param->mode == GPU_TEST_MODE_STRESS) {
-        if (param->screenshot_en) {
-            GPU_LOG_WARN("Screenshot is not enabled in stress mode, disable it");
-            param->screenshot_en = false;
-        }
-    }
-
     if (param->run_loop_count <= 0) {
         GPU_LOG_ERROR("Loop count should be greater than 0");
         show_usage(argv[0], EXIT_FAILURE);
