@@ -58,17 +58,20 @@
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
+    /* Add your setup code here, such as allocating memory, initializing variables, etc. */
     return VG_LITE_SUCCESS;
 }
 
 static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
 {
+    /* Add your drawing code here, such as vg_lite_draw, vg_lite_blit, etc. */
     return VG_LITE_SUCCESS;
 }
 
 static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
 {
+    /* Add your teardown code here, such as freeing memory, deinitializing variables, etc. */
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(template, NONE, "");
+VG_LITE_TEST_CASE_ITEM_DEF(template, NONE, "Add your test case instructions here.");
