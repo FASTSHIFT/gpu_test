@@ -244,11 +244,16 @@ void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_
 
     memset(buffer, 0, sizeof(vg_lite_buffer_t));
     buffer->memory = gpu_buffer->data;
+    buffer->address = (vg_lite_uint32_t)(uintptr_t)buffer->memory;
     buffer->width = width;
     buffer->height = height;
     buffer->format = format;
     buffer->stride = stride;
     buffer->handle = gpu_buffer;
+
+    buffer->tiled = VG_LITE_LINEAR;
+    buffer->image_mode = VG_LITE_NORMAL_IMAGE_MODE;
+    buffer->transparency_mode = VG_LITE_IMAGE_OPAQUE;
 }
 
 void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer)
