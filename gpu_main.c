@@ -99,7 +99,7 @@ static void show_usage(const char* progname, int exitcode)
 
     printf("  --target <string> Test output image size(px), default is 480x480. Example: "
            "<decimal-value width>x<decimal-value height>\n");
-    printf("  --loop-count <int> Stress mode loop count, default is 1000.\n");
+    printf("  --loop-count <int> Stress mode loop count, default is 10000.\n");
     printf("  --cpu-freq <int> CPU frequency in MHz, default is 200.\n");
     printf("  --fbdev <string> Framebuffer device path.\n");
 
@@ -193,7 +193,7 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     param->output_dir = GPU_OUTPUT_DIR_DEFAULT;
     param->img_width = GPU_TEST_DESIGN_WIDTH;
     param->img_height = GPU_TEST_DESIGN_WIDTH;
-    param->run_loop_count = 1000;
+    param->run_loop_count = 10000;
     param->cpu_freq = 200;
 
     int ch;
