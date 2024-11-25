@@ -149,6 +149,8 @@ uint32_t gpu_buffer_get_pixel(struct gpu_buffer_s* buffer, uint32_t x, uint32_t 
         GPU_LOG_ERROR("Unsupported color format: %d", buffer->format);
         break;
     }
+
+    return 0;
 }
 
 /**********************
