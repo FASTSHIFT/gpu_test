@@ -150,8 +150,6 @@ static bool vg_lite_test_iter_next(struct vg_lite_test_iter_s* iter)
 
 static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
 {
-    struct vg_lite_test_context_s* vg_lite_ctx = vg_lite_test_context_create(ctx);
-
     /* Import testcase entry */
 
 #define ITEM_DEF(NAME) extern struct vg_lite_test_item_s vg_lite_test_case_item_##NAME;
@@ -170,6 +168,17 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
     iter.group_size = sizeof(vg_lite_test_group) / sizeof(vg_lite_test_group[0]);
     iter.name_to_index = vg_lite_test_name_to_index(iter.group, iter.group_size, ctx->param.testcase_name);
     iter.total_loop_count = ctx->param.run_loop_count;
+
+    /* Check if test case is valid */
+    if (ctx->param.testcase_name && iter.name_to_index < 0) {
+        GPU_LOG_WARN("Test case not found: %s, Available test cases:", ctx->param.testcase_name);
+        for (int i = 0; i < iter.group_size; i++) {
+            GPU_LOG_WARN("[%d/%d]: %s", i, iter.group_size, iter.group[i]->name);
+        }
+        return;
+    }
+
+    struct vg_lite_test_context_s* vg_lite_ctx = vg_lite_test_context_create(ctx);
 
     while (vg_lite_test_iter_next(&iter)) {
         if (!vg_lite_test_context_run_item(vg_lite_ctx, iter.item)) {
