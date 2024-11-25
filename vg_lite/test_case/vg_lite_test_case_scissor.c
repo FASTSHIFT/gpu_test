@@ -73,9 +73,8 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_enable_scissor());
 #endif
 
-    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_load_image(
-        image,
+    vg_lite_test_context_load_src_image(
+        ctx,
         image_circle_a8_map,
         IMAGE_CIRCLE_A8_WIDTH,
         IMAGE_CIRCLE_A8_HEIGHT,

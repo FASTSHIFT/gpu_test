@@ -125,8 +125,7 @@ static vg_lite_error_t draw_image(struct vg_lite_test_context_s* ctx, vg_lite_bu
 
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
-    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_buffer_alloc(image, 64, 64, VG_LITE_A8, VG_LITE_TEST_STRIDE_AUTO);
+    vg_lite_buffer_t* image = vg_lite_test_context_alloc_src_buffer(ctx, 64, 64, VG_LITE_A8, VG_LITE_TEST_STRIDE_AUTO);
 
     uint8_t* dst = image->memory;
 

@@ -73,9 +73,8 @@ static vg_lite_error_t clear_buffer(vg_lite_buffer_t* image, int x, vg_lite_colo
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
-    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_buffer_alloc(
-        image,
+    vg_lite_buffer_t* image = vg_lite_test_context_alloc_src_buffer(
+        ctx,
         target_buffer->width,
         target_buffer->height,
         target_buffer->format,

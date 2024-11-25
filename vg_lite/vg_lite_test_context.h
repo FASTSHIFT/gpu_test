@@ -110,6 +110,39 @@ vg_lite_buffer_t* vg_lite_test_context_get_target_buffer(struct vg_lite_test_con
 vg_lite_buffer_t* vg_lite_test_context_get_src_buffer(struct vg_lite_test_context_s* ctx);
 
 /**
+ * @brief Allocate a source buffer for the test case
+ * @param ctx The test context to use
+ * @param width The width of the buffer
+ * @param height The height of the buffer
+ * @param format The format of the buffer
+ * @param stride The stride of the buffer
+ * @return The allocated source buffer
+ */
+vg_lite_buffer_t* vg_lite_test_context_alloc_src_buffer(
+    struct vg_lite_test_context_s* ctx,
+    uint32_t width,
+    uint32_t height,
+    vg_lite_buffer_format_t format,
+    uint32_t stride);
+
+/**
+ * @brief Load the source image for the test case
+ * @param ctx The test context to use
+ * @param image_data The image data to load
+ * @param width The width of the image
+ * @param height The height of the image
+ * @param format The format of the image
+ * @param image_stride The stride of the image
+ */
+void vg_lite_test_context_load_src_image(
+    struct vg_lite_test_context_s* ctx,
+    const void* image_data,
+    uint32_t width,
+    uint32_t height,
+    vg_lite_buffer_format_t format,
+    uint32_t image_stride);
+
+/**
  * @brief Set the transform for the test case
  * @param ctx The test context to use
  * @param matrix The transform matrix to set

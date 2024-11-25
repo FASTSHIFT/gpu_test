@@ -101,14 +101,9 @@ void vg_lite_test_error_dump_info(vg_lite_error_t error);
  * @param height The height of the buffer.
  * @param format The format of the buffer.
  * @param stride The stride of the buffer. If it is VG_LITE_TEST_STRIDE_AUTO, the stride will be calculated automatically.
+ * @return The allocated GPU buffer.
  */
-void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_t height, vg_lite_buffer_format_t format, uint32_t stride);
-
-/**
- * @brief Free a GPU buffer for VG Lite.
- * @param buffer The VG Lite buffer to be freed.
- */
-void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer);
+struct gpu_buffer_s* vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_t height, vg_lite_buffer_format_t format, uint32_t stride);
 
 /**
  * @brief Convert a VG Lite buffer to a GPU buffer.

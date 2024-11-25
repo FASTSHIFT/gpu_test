@@ -61,10 +61,9 @@
 static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
 {
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
-    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
 
-    vg_lite_test_load_image(
-        image,
+    vg_lite_test_context_load_src_image(
+        ctx,
         image_needle_bgra8888_map,
         IMAGE_NEEDLE_BGRA8888_WIDTH,
         IMAGE_NEEDLE_BGRA8888_HEIGHT,
@@ -115,4 +114,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(blit, NONE, "Draw two needles opaque and 50%% transparent");
+VG_LITE_TEST_CASE_ITEM_DEF(blit, NONE, "Draw two needles opaque and 50 percent transparent");

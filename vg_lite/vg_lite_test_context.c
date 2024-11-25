@@ -27,6 +27,7 @@
 
 #include "vg_lite_test_context.h"
 #include "../gpu_assert.h"
+#include "../gpu_buffer.h"
 #include "../gpu_context.h"
 #include "../gpu_recorder.h"
 #include "../gpu_screenshot.h"
@@ -51,7 +52,8 @@
 
 struct vg_lite_test_context_s {
     struct gpu_test_context_s* gpu_ctx;
-    bool use_external_target_buffer;
+    struct gpu_buffer_s* target_gpu_buffer;
+    struct gpu_buffer_s* src_gpu_buffer;
     vg_lite_buffer_t target_buffer;
     vg_lite_buffer_t src_buffer;
     struct vg_lite_test_path_s* path;
@@ -105,9 +107,8 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
     if (gpu_ctx->target_buffer.data) {
         GPU_LOG_INFO("Using external target buffer");
         vg_lite_test_gpu_buffer_to_vg_buffer(&ctx->target_buffer, &gpu_ctx->target_buffer);
-        ctx->use_external_target_buffer = true;
     } else {
-        vg_lite_test_buffer_alloc(
+        ctx->target_gpu_buffer = vg_lite_test_buffer_alloc(
             &ctx->target_buffer,
             ctx->gpu_ctx->param.img_width,
             ctx->gpu_ctx->param.img_height,
@@ -139,8 +140,9 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
 void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
 {
     GPU_ASSERT_NULL(ctx);
-    if (!ctx->use_external_target_buffer) {
-        vg_lite_test_buffer_free(&ctx->target_buffer);
+    if (ctx->target_gpu_buffer) {
+        gpu_buffer_free(ctx->target_gpu_buffer);
+        ctx->target_gpu_buffer = NULL;
     }
 
     if (ctx->path) {
@@ -149,7 +151,7 @@ void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
     }
 
     /* Check if the context is clean */
-    GPU_ASSERT(ctx->src_buffer.memory == NULL);
+    GPU_ASSERT(ctx->src_gpu_buffer == NULL);
 
     memset(ctx, 0, sizeof(struct vg_lite_test_context_s));
     free(ctx);
@@ -284,6 +286,52 @@ vg_lite_buffer_t* vg_lite_test_context_get_src_buffer(struct vg_lite_test_contex
     return &ctx->src_buffer;
 }
 
+vg_lite_buffer_t* vg_lite_test_context_alloc_src_buffer(
+    struct vg_lite_test_context_s* ctx,
+    uint32_t width,
+    uint32_t height,
+    vg_lite_buffer_format_t format,
+    uint32_t stride)
+{
+    GPU_ASSERT_NULL(ctx);
+    GPU_ASSERT(width > 0);
+    GPU_ASSERT(height > 0);
+
+    /* Check if the source buffer is already created */
+    GPU_ASSERT(ctx->src_gpu_buffer == NULL);
+    ctx->src_gpu_buffer = vg_lite_test_buffer_alloc(&ctx->src_buffer, width, height, format, stride);
+    return &ctx->src_buffer;
+}
+
+void vg_lite_test_context_load_src_image(
+    struct vg_lite_test_context_s* ctx,
+    const void* image_data,
+    uint32_t width,
+    uint32_t height,
+    vg_lite_buffer_format_t format,
+    uint32_t image_stride)
+{
+    vg_lite_test_context_alloc_src_buffer(ctx, width, height, format, VG_LITE_TEST_STRIDE_AUTO);
+    vg_lite_buffer_t* buffer = vg_lite_test_context_get_src_buffer(ctx);
+
+    /* Check if the buffer is large enough to hold the image data. */
+    GPU_ASSERT((height * image_stride) <= (buffer->stride * buffer->height));
+
+    const uint8_t* src = image_data;
+    uint8_t* dest = buffer->memory;
+
+    for (uint32_t y = 0; y < height; y++) {
+        memcpy(dest, src, image_stride);
+        dest += buffer->stride;
+        src += image_stride;
+    }
+
+    if (format == VG_LITE_A4 || format == VG_LITE_A8) {
+        GPU_LOG_INFO("Image loaded with alpha format");
+        buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
+    }
+}
+
 void vg_lite_test_context_set_transform(struct vg_lite_test_context_s* ctx, const vg_lite_matrix_t* matrix)
 {
     GPU_ASSERT_NULL(ctx);
@@ -348,8 +396,9 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     ctx->finish_tick = 0;
     ctx->user_data = NULL;
 
-    if (ctx->src_buffer.memory) {
-        vg_lite_test_buffer_free(&ctx->src_buffer);
+    if (ctx->src_gpu_buffer) {
+        gpu_buffer_free(ctx->src_gpu_buffer);
+        ctx->src_gpu_buffer = NULL;
     }
 
     if (ctx->path) {

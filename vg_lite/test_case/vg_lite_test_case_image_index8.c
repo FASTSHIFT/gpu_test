@@ -63,9 +63,8 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         sizeof(imgae_cogwheel_index8_color_table) / sizeof(vg_lite_uint32_t),
         (vg_lite_uint32_t*)imgae_cogwheel_index8_color_table));
 
-    vg_lite_buffer_t* image = vg_lite_test_context_get_src_buffer(ctx);
-    vg_lite_test_load_image(
-        image,
+    vg_lite_test_context_load_src_image(
+        ctx,
         imgae_cogwheel_index8_map,
         IMAGE_COGWHEEL_INDEX8_WIDTH,
         IMAGE_COGWHEEL_INDEX8_HEIGHT,

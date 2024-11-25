@@ -225,7 +225,7 @@ const char* vg_lite_test_feature_string(vg_lite_feature_t feature)
     return "UNKNOW_FEATURE";
 }
 
-void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_t height, vg_lite_buffer_format_t format, uint32_t stride)
+struct gpu_buffer_s* vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_t height, vg_lite_buffer_format_t format, uint32_t stride)
 {
     GPU_ASSERT_NULL(buffer);
     if (vg_lite_query_feature(gcFEATURE_BIT_VG_16PIXELS_ALIGN)) {
@@ -249,21 +249,12 @@ void vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_t width, uint32_
     buffer->height = height;
     buffer->format = format;
     buffer->stride = stride;
-    buffer->handle = gpu_buffer;
 
     buffer->tiled = VG_LITE_LINEAR;
     buffer->image_mode = VG_LITE_NORMAL_IMAGE_MODE;
     buffer->transparency_mode = VG_LITE_IMAGE_OPAQUE;
-}
 
-void vg_lite_test_buffer_free(vg_lite_buffer_t* buffer)
-{
-    GPU_ASSERT_NULL(buffer);
-    GPU_ASSERT_NULL(buffer->handle);
-
-    struct gpu_buffer_s* gpu_buffer = buffer->handle;
-    gpu_buffer_free(gpu_buffer);
-    memset(buffer, 0, sizeof(vg_lite_buffer_t));
+    return gpu_buffer;
 }
 
 void vg_lite_test_vg_buffer_to_gpu_buffer(struct gpu_buffer_s* gpu_buffer, const vg_lite_buffer_t* vg_buffer)
@@ -355,34 +346,6 @@ const char* vg_lite_test_buffer_format_string(vg_lite_buffer_format_t format)
     }
 
     return "-";
-}
-
-void vg_lite_test_load_image(
-    vg_lite_buffer_t* buffer,
-    const void* image_data,
-    uint32_t width,
-    uint32_t height,
-    vg_lite_buffer_format_t format,
-    uint32_t image_stride)
-{
-    vg_lite_test_buffer_alloc(buffer, width, height, format, VG_LITE_TEST_STRIDE_AUTO);
-
-    /* Check if the buffer is large enough to hold the image data. */
-    GPU_ASSERT((height * image_stride) <= (buffer->stride * buffer->height));
-
-    const uint8_t* src = image_data;
-    uint8_t* dest = buffer->memory;
-
-    for (uint32_t y = 0; y < height; y++) {
-        memcpy(dest, src, image_stride);
-        dest += buffer->stride;
-        src += image_stride;
-    }
-
-    if (format == VG_LITE_A4 || format == VG_LITE_A8) {
-        GPU_LOG_INFO("Image loaded with alpha format");
-        buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
-    }
 }
 
 vg_lite_error_t vg_lite_test_idle_flush(void)
