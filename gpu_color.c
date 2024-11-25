@@ -21,18 +21,12 @@
  * SOFTWARE.
  */
 
-#ifndef GPU_BUFFER_H
-#define GPU_BUFFER_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*********************
  *      INCLUDES
  *********************/
 
 #include "gpu_color.h"
+#include "gpu_log.h"
 
 /*********************
  *      DEFINES
@@ -42,52 +36,49 @@ extern "C" {
  *      TYPEDEFS
  **********************/
 
-struct gpu_buffer_s {
-    enum gpu_color_format_e format;
-    uint32_t width;
-    uint32_t height;
-    uint32_t stride;
-    void* data;
-    void* data_unaligned;
-};
-
 /**********************
- * GLOBAL PROTOTYPES
+ *  STATIC PROTOTYPES
  **********************/
 
-/**
- * Allocate a new GPU buffer with the given format, width, height, and stride.
- * The buffer will be initialized with zeros.
- * @param width The width of the buffer in pixels.
- * @param height The height of the buffer in pixels.
- * @param format The color format of the buffer.
- * @param stride The stride of the buffer in bytes.
- * @param align The alignment of the start address of the buffer.
- * @return A pointer to the new GPU buffer, or NULL if there was an error.
- */
-struct gpu_buffer_s* gpu_buffer_alloc(uint32_t width, uint32_t height, enum gpu_color_format_e format, uint32_t stride, uint32_t align);
-
-/**
- * Free a GPU buffer.
- * @param buffer The GPU buffer to free.
- */
-void gpu_buffer_free(struct gpu_buffer_s* buffer);
-
-/**
- * Get the pixel at the given position in the buffer.
- * @param buffer The GPU buffer to get the pixel from.
- * @param x The x position of the pixel.
- * @param y The y position of the pixel.
- * @return The pixel data (BGRA8888 format).
- */
-uint32_t gpu_buffer_get_pixel(struct gpu_buffer_s* buffer, uint32_t x, uint32_t y);
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 
 /**********************
  *      MACROS
  **********************/
 
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
 
-#endif /*GPU_TEMPL_H*/
+uint32_t gpu_color_format_get_bpp(gpu_color_format_t format)
+{
+    switch (format) {
+    case GPU_COLOR_FORMAT_BGR565:
+        return sizeof(gpu_color_bgr565_t) * 8;
+
+    case GPU_COLOR_FORMAT_BGR888:
+        return sizeof(gpu_color_bgr888_t) * 8;
+
+    case GPU_COLOR_FORMAT_BGRA8888:
+    case GPU_COLOR_FORMAT_BGRX8888:
+        return sizeof(gpu_color_bgra8888_t) * 8;
+
+    case GPU_COLOR_FORMAT_BGRA5658:
+        return sizeof(gpu_color_bgra5658_t) * 8;
+
+    case GPU_COLOR_FORMAT_INDEX8:
+        return sizeof(uint8_t) * 8;
+
+    default:
+        GPU_LOG_ERROR("Unsupported color format: %d", format);
+        break;
+    }
+
+    return 0;
+}
+
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/

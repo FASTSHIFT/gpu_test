@@ -183,30 +183,29 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
         goto failed;
     }
 
-    const uint8_t* target_data = target_buffer.data;
-    const uint8_t* loaded_data = loaded_buffer->data;
     for (int y = 0; y < target_buffer.height; y++) {
-        const uint32_t* target_row = (const uint32_t*)target_data;
-        const uint32_t* loaded_row = (const uint32_t*)loaded_data;
-
         for (int x = 0; x < target_buffer.width; x++) {
-            if (*target_row != *loaded_row) {
+            gpu_color_bgra8888_t target_pixel;
+            target_pixel.full = gpu_buffer_get_pixel(&target_buffer, x, y);
+
+            gpu_color_bgra8888_t loaded_pixel;
+            loaded_pixel.full = gpu_buffer_get_pixel(loaded_buffer, x, y);
+
+            if (target_pixel.full != loaded_pixel.full) {
                 snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
-                    "Pixel not match in (X%d Y%d) target: %08" PRIx32 " vs loaded: %08" PRIx32,
-                    x, y, *target_row, *loaded_row);
+                    "Pixel not match in (X%d Y%d) "
+                    "target: 0x%08" PRIX32 "(A%d R%d G%d B%d) vs "
+                    "loaded: 0x%08" PRIX32 "(A%d R%d G%d B%d)",
+                    x, y,
+                    target_pixel.full, target_pixel.ch.alpha, target_pixel.ch.red, target_pixel.ch.green, target_pixel.ch.blue,
+                    loaded_pixel.full, loaded_pixel.ch.alpha, loaded_pixel.ch.red, loaded_pixel.ch.green, loaded_pixel.ch.blue);
                 GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
 
                 snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s_err.png", ctx->gpu_ctx->param.output_dir, name);
                 gpu_screenshot_save(path, &target_buffer);
                 goto failed;
             }
-
-            target_row++;
-            loaded_row++;
         }
-
-        target_data += target_buffer.stride;
-        loaded_data += loaded_buffer->stride;
     }
 
     retval = true;

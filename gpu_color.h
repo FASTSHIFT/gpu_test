@@ -85,9 +85,15 @@ typedef union gpu_color_bgr565_u {
     uint16_t full;
 } gpu_color16_t, gpu_color_bgr565_t;
 
-typedef struct gpu_color_bgra5658_s {
-    gpu_color16_t color;
-    uint8_t alpha;
+typedef struct gpu_color_bgra5658_u {
+    struct
+    {
+        uint16_t blue : 5;
+        uint16_t green : 6;
+        uint16_t red : 5;
+        uint16_t alpha : 8;
+    } ch;
+    uint8_t full[3];
 } gpu_color16_alpha_t, gpu_color_bgra5658_t;
 
 #pragma pack()
@@ -95,6 +101,13 @@ typedef struct gpu_color_bgra5658_s {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+
+/**
+ * @brief Get the number of bits per pixel for a given color format
+ * @param format The color format to get the bits per pixel for
+ * @return The number of bits per pixel for the given color format
+ */
+uint32_t gpu_color_format_get_bpp(gpu_color_format_t format);
 
 /**********************
  *      MACROS
