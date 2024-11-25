@@ -66,6 +66,9 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
     vg_lite_rectangle_t rect = { 0, 0, target_buffer->width, target_buffer->height };
 
+    /* Black */
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, NULL, 0xFF000000));
+
     /* White */
     rect.width /= 2;
     rect.height /= 2;
@@ -94,4 +97,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(clear, NONE, "Clear 4 areas with different color");
+VG_LITE_TEST_CASE_ITEM_DEF(clear, NONE, "Clear 5 areas with different color");
