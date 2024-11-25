@@ -330,6 +330,9 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     size_t target_size = ctx->target_buffer.stride * ctx->target_buffer.height;
     memset(ctx->target_buffer.memory, 0, target_size);
 
+    /* Clear the source buffer info */
+    memset(&ctx->src_buffer, 0, sizeof(vg_lite_buffer_t));
+
     ctx->vg_error_remark_text[0] = '\0';
     ctx->screenshot_remark_text[0] = '\0';
     ctx->setup_tick = 0;
