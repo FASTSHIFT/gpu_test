@@ -202,11 +202,7 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
         vg_lite_test_context_error_to_remark(ctx, error);
     }
 
-    bool screenshot_cmp_pass = true;
-
-    if (ctx->gpu_ctx->param.screenshot_en) {
-        screenshot_cmp_pass = vg_lite_test_context_check_screenshot(ctx, item->name);
-    }
+    bool screenshot_cmp_pass = vg_lite_test_context_check_screenshot(ctx, item->name);
 
     bool passed = (error == VG_LITE_SUCCESS && screenshot_cmp_pass);
 
@@ -422,6 +418,10 @@ static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* 
 
 static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s* ctx, const char* name)
 {
+    if (!ctx->gpu_ctx->param.screenshot_en) {
+        return true;
+    }
+
     bool retval = false;
     char path[128];
     snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s.png", ctx->gpu_ctx->param.output_dir, name);
