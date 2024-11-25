@@ -77,6 +77,7 @@ static void vg_lite_test_context_record(
     vg_lite_error_t error,
     bool passed);
 static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* ctx, vg_lite_error_t error);
+static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s* ctx, const char* name);
 
 /**********************
  *  STATIC VARIABLES
@@ -145,78 +146,18 @@ void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
         ctx->target_gpu_buffer = NULL;
     }
 
+    if (ctx->src_gpu_buffer) {
+        gpu_buffer_free(ctx->src_gpu_buffer);
+        ctx->src_gpu_buffer = NULL;
+    }
+
     if (ctx->path) {
         vg_lite_test_path_destroy(ctx->path);
         ctx->path = NULL;
     }
 
-    /* Check if the context is clean */
-    GPU_ASSERT(ctx->src_gpu_buffer == NULL);
-
     memset(ctx, 0, sizeof(struct vg_lite_test_context_s));
     free(ctx);
-}
-
-static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s* ctx, const char* name)
-{
-    bool retval = false;
-    char path[128];
-    snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s.png", ctx->gpu_ctx->param.output_dir, name);
-
-    struct gpu_buffer_s target_buffer;
-    vg_lite_test_vg_buffer_to_gpu_buffer(&target_buffer, &ctx->target_buffer);
-
-    struct gpu_buffer_s* loaded_buffer = gpu_screenshot_load(path);
-    if (!loaded_buffer) {
-        int ret = gpu_screenshot_save(path, &target_buffer);
-        snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
-            "Create: %s - %s", path, ret == 0 ? "SUCCESS" : "FAILED");
-        return true;
-    }
-
-    if (target_buffer.width != loaded_buffer->width || target_buffer.height != loaded_buffer->height) {
-        snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
-            "Size not matched: %s target: W%dxH%d vs loaded: W%dxH%d",
-            path,
-            (int)target_buffer.width, (int)target_buffer.height,
-            (int)loaded_buffer->width, (int)loaded_buffer->height);
-
-        GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
-        goto failed;
-    }
-
-    for (int y = 0; y < target_buffer.height; y++) {
-        for (int x = 0; x < target_buffer.width; x++) {
-            gpu_color_bgra8888_t target_pixel;
-            target_pixel.full = gpu_buffer_get_pixel(&target_buffer, x, y);
-
-            gpu_color_bgra8888_t loaded_pixel;
-            loaded_pixel.full = gpu_buffer_get_pixel(loaded_buffer, x, y);
-
-            if (target_pixel.full != loaded_pixel.full) {
-                snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
-                    "Pixel not match in (X%d Y%d) "
-                    "target: 0x%08" PRIX32 "(A%d R%d G%d B%d) vs "
-                    "loaded: 0x%08" PRIX32 "(A%d R%d G%d B%d)",
-                    x, y,
-                    target_pixel.full, target_pixel.ch.alpha, target_pixel.ch.red, target_pixel.ch.green, target_pixel.ch.blue,
-                    loaded_pixel.full, loaded_pixel.ch.alpha, loaded_pixel.ch.red, loaded_pixel.ch.green, loaded_pixel.ch.blue);
-                GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
-
-                snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s_err.png", ctx->gpu_ctx->param.output_dir, name);
-                gpu_screenshot_save(path, &target_buffer);
-                goto failed;
-            }
-        }
-    }
-
-    retval = true;
-    GPU_LOG_INFO("Screenshot check PASS: %s", path);
-    snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text), "SUCCESS");
-
-failed:
-    gpu_buffer_free(loaded_buffer);
-    return retval;
 }
 
 bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item)
@@ -226,6 +167,8 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
         vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT, true);
         return true;
     }
+
+    vg_lite_test_context_cleanup(ctx);
 
     GPU_LOG_INFO("Running test case: %s", item->name);
 
@@ -268,8 +211,6 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
     bool passed = (error == VG_LITE_SUCCESS && screenshot_cmp_pass);
 
     vg_lite_test_context_record(ctx, item, error, passed);
-
-    vg_lite_test_context_cleanup(ctx);
 
     return passed;
 }
@@ -474,4 +415,66 @@ static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* 
             "Memory not enough: %" PRIu32 " bytes", (uint32_t)mem_size);
         return;
     }
+}
+
+static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s* ctx, const char* name)
+{
+    bool retval = false;
+    char path[128];
+    snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s.png", ctx->gpu_ctx->param.output_dir, name);
+
+    struct gpu_buffer_s target_buffer;
+    vg_lite_test_vg_buffer_to_gpu_buffer(&target_buffer, &ctx->target_buffer);
+
+    struct gpu_buffer_s* loaded_buffer = gpu_screenshot_load(path);
+    if (!loaded_buffer) {
+        int ret = gpu_screenshot_save(path, &target_buffer);
+        snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
+            "Create: %s - %s", path, ret == 0 ? "SUCCESS" : "FAILED");
+        return true;
+    }
+
+    if (target_buffer.width != loaded_buffer->width || target_buffer.height != loaded_buffer->height) {
+        snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
+            "Size not matched: %s target: W%dxH%d vs loaded: W%dxH%d",
+            path,
+            (int)target_buffer.width, (int)target_buffer.height,
+            (int)loaded_buffer->width, (int)loaded_buffer->height);
+
+        GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
+        goto failed;
+    }
+
+    for (int y = 0; y < target_buffer.height; y++) {
+        for (int x = 0; x < target_buffer.width; x++) {
+            gpu_color_bgra8888_t target_pixel;
+            target_pixel.full = gpu_buffer_get_pixel(&target_buffer, x, y);
+
+            gpu_color_bgra8888_t loaded_pixel;
+            loaded_pixel.full = gpu_buffer_get_pixel(loaded_buffer, x, y);
+
+            if (target_pixel.full != loaded_pixel.full) {
+                snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text),
+                    "Pixel not match in (X%d Y%d) "
+                    "target: 0x%08" PRIX32 "(A%d R%d G%d B%d) vs "
+                    "loaded: 0x%08" PRIX32 "(A%d R%d G%d B%d)",
+                    x, y,
+                    target_pixel.full, target_pixel.ch.alpha, target_pixel.ch.red, target_pixel.ch.green, target_pixel.ch.blue,
+                    loaded_pixel.full, loaded_pixel.ch.alpha, loaded_pixel.ch.red, loaded_pixel.ch.green, loaded_pixel.ch.blue);
+                GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
+
+                snprintf(path, sizeof(path), "%s" REF_IMAGES_DIR "/%s_err.png", ctx->gpu_ctx->param.output_dir, name);
+                gpu_screenshot_save(path, &target_buffer);
+                goto failed;
+            }
+        }
+    }
+
+    retval = true;
+    GPU_LOG_INFO("Screenshot check PASS: %s", path);
+    snprintf(ctx->screenshot_remark_text, sizeof(ctx->screenshot_remark_text), "SUCCESS");
+
+failed:
+    gpu_buffer_free(loaded_buffer);
+    return retval;
 }
