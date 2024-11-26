@@ -59,11 +59,11 @@ struct gpu_test_param_s {
     const char* output_dir;
     const char* testcase_name;
     const char* fbdev_path;
-    int img_width;
-    int img_height;
+    int target_width;
+    int target_height;
     int run_loop_count;
-    bool screenshot_en;
     int cpu_freq;
+    bool screenshot_en;
 };
 
 struct gpu_test_context_s {

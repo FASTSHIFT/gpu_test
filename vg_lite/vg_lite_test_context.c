@@ -101,8 +101,8 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
     ctx->gpu_ctx = gpu_ctx;
     vg_lite_identity(&ctx->matrix);
     vg_lite_scale(
-        gpu_ctx->param.img_width / (float)GPU_TEST_DESIGN_WIDTH,
-        gpu_ctx->param.img_height / (float)GPU_TEST_DESIGN_HEIGHT,
+        gpu_ctx->param.target_width / (float)GPU_TEST_DESIGN_WIDTH,
+        gpu_ctx->param.target_height / (float)GPU_TEST_DESIGN_HEIGHT,
         &ctx->matrix);
 
     if (gpu_ctx->target_buffer.data) {
@@ -111,8 +111,8 @@ struct vg_lite_test_context_s* vg_lite_test_context_create(struct gpu_test_conte
     } else {
         ctx->target_gpu_buffer = vg_lite_test_buffer_alloc(
             &ctx->target_buffer,
-            ctx->gpu_ctx->param.img_width,
-            ctx->gpu_ctx->param.img_height,
+            ctx->gpu_ctx->param.target_width,
+            ctx->gpu_ctx->param.target_height,
             VG_LITE_BGRA8888,
             VG_LITE_TEST_STRIDE_AUTO);
     }

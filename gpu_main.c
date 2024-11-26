@@ -97,7 +97,7 @@ static void show_usage(const char* progname, int exitcode)
     printf("  -t <string> Testcase name.\n");
     printf("  -s Enable screenshot.\n");
 
-    printf("  --target <string> Test output image size(px), default is 480x480. Example: "
+    printf("  --target <string> Target render image size(px), default is 480x480. Example: "
            "<decimal-value width>x<decimal-value height>\n");
     printf("  --loop-count <int> Stress mode loop count, default is 10000.\n");
     printf("  --cpu-freq <int> CPU frequency in MHz, default is 200.\n");
@@ -152,10 +152,10 @@ static void parse_long_commandline(
         int height = 0;
         int converted = sscanf(optarg, "%dx%d", &width, &height);
         if (converted == 2 && width >= 0 && height >= 0) {
-            param->img_width = width;
-            param->img_height = height;
+            param->target_width = width;
+            param->target_height = height;
         } else {
-            GPU_LOG_ERROR("Error image size: %s", optarg);
+            GPU_LOG_ERROR("Error target image size: %s", optarg);
             show_usage(argv[0], EXIT_FAILURE);
         }
     } break;
@@ -191,8 +191,8 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     memset(param, 0, sizeof(struct gpu_test_param_s));
     param->mode = GPU_TEST_MODE_DEFAULT;
     param->output_dir = GPU_OUTPUT_DIR_DEFAULT;
-    param->img_width = GPU_TEST_DESIGN_WIDTH;
-    param->img_height = GPU_TEST_DESIGN_WIDTH;
+    param->target_width = GPU_TEST_DESIGN_WIDTH;
+    param->target_height = GPU_TEST_DESIGN_WIDTH;
     param->run_loop_count = 10000;
     param->cpu_freq = 200;
 
@@ -249,7 +249,7 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
 
     GPU_LOG_INFO("Test mode: %d", param->mode);
     GPU_LOG_INFO("Output DIR: %s", param->output_dir);
-    GPU_LOG_INFO("Target image size: %dx%d", param->img_width, param->img_height);
+    GPU_LOG_INFO("Target render image size: %dx%d", param->target_width, param->target_height);
     GPU_LOG_INFO("Testcase name: %s", param->testcase_name);
     GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
     GPU_LOG_INFO("Loop count: %d", param->run_loop_count);
