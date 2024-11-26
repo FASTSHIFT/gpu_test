@@ -28,7 +28,7 @@
 #include "vg_lite_test_utils.h"
 #include "../gpu_assert.h"
 #include "../gpu_utils.h"
-#include "vg_lite_test_math.h"
+#include "../gpu_math.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <string.h>

@@ -27,7 +27,7 @@
 
 #include "vg_lite_test_path.h"
 #include "../gpu_assert.h"
-#include "vg_lite_test_math.h"
+#include "../gpu_math.h"
 #include <float.h>
 #include <stdlib.h>
 #include <string.h>

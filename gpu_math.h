@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 
-#ifndef VG_LITE_TEST_MATH_H
-#define VG_LITE_TEST_MATH_H
+#ifndef GPU_MATH_H
+#define GPU_MATH_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,15 +32,15 @@ extern "C" {
  *      INCLUDES
  *********************/
 
+#include <float.h>
 #include <math.h>
 #include <stdbool.h>
-#include <float.h>
 
 /*********************
  *      DEFINES
  *********************/
 
-#define MATH_PI  3.14159265358979323846f
+#define MATH_PI 3.14159265358979323846f
 #define MATH_HALF_PI 1.57079632679489661923f
 #define MATH_TWO_PI 6.28318530717958647692f
 #define DEG_TO_RAD 0.017453292519943295769236907684886f
@@ -54,11 +54,11 @@ extern "C" {
 #define MATH_FABSF(x) fabsf(x)
 #define MATH_SQRTF(x) sqrtf(x)
 
-#define MATH_RADIANS(deg) ((deg) * DEG_TO_RAD)
-#define MATH_DEGREES(rad) ((rad) * RAD_TO_DEG)
+#define MATH_RADIANS(deg) ((deg)*DEG_TO_RAD)
+#define MATH_DEGREES(rad) ((rad)*RAD_TO_DEG)
 
-#define MATH_MIN(a, b) ((a) < (b)? (a) : (b))
-#define MATH_MAX(a, b) ((a) > (b)? (a) : (b))
+#define MATH_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MATH_MAX(a, b) ((a) > (b) ? (a) : (b))
 
 /**********************
  *      TYPEDEFS
@@ -68,11 +68,22 @@ extern "C" {
  * GLOBAL PROTOTYPES
  **********************/
 
+/**
+ * @brief Check if a float value is zero.
+ * @param a The float value to check.
+ * @return True if the value is zero, false otherwise.
+ */
 static inline bool math_zero(float a)
 {
     return (MATH_FABSF(a) < FLT_EPSILON);
 }
 
+/**
+ * @brief Check if two float values are equal.
+ * @param a The first float value to compare.
+ * @param b The second float value to compare.
+ * @return True if the values are equal, false otherwise.
+ */
 static inline bool math_equal(float a, float b)
 {
     return math_zero(a - b);
@@ -86,4 +97,4 @@ static inline bool math_equal(float a, float b)
 } /*extern "C"*/
 #endif
 
-#endif /*VG_LITE_TEST_MATH_H*/
+#endif /*GPU_MATH_H*/
