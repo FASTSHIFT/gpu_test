@@ -162,21 +162,24 @@ static void vg_lite_test_run_group(struct gpu_test_context_s* ctx)
     };
 #undef ITEM_DEF
 
-    struct vg_lite_test_iter_s iter = { 0 };
-    iter.mode = ctx->param.mode;
-    iter.group = vg_lite_test_group;
-    iter.group_size = sizeof(vg_lite_test_group) / sizeof(vg_lite_test_group[0]);
-    iter.name_to_index = vg_lite_test_name_to_index(iter.group, iter.group_size, ctx->param.testcase_name);
-    iter.total_loop_count = ctx->param.run_loop_count;
+    const int group_size = sizeof(vg_lite_test_group) / sizeof(vg_lite_test_group[0]);
+    const int name_to_index = vg_lite_test_name_to_index(vg_lite_test_group, group_size, ctx->param.testcase_name);
 
     /* Check if test case is valid */
-    if (ctx->param.testcase_name && iter.name_to_index < 0) {
+    if (ctx->param.testcase_name && name_to_index < 0) {
         GPU_LOG_WARN("Test case not found: %s, Available test cases:", ctx->param.testcase_name);
-        for (int i = 0; i < iter.group_size; i++) {
-            GPU_LOG_WARN("[%d/%d]: %s", i, iter.group_size, iter.group[i]->name);
+        for (int i = 0; i < group_size; i++) {
+            GPU_LOG_WARN("[%d/%d]: %s", i, group_size, vg_lite_test_group[i]->name);
         }
         return;
     }
+
+    struct vg_lite_test_iter_s iter = { 0 };
+    iter.mode = ctx->param.mode;
+    iter.group = vg_lite_test_group;
+    iter.group_size = group_size;
+    iter.name_to_index = name_to_index;
+    iter.total_loop_count = ctx->param.run_loop_count;
 
     struct vg_lite_test_context_s* vg_lite_ctx = vg_lite_test_context_create(ctx);
 
