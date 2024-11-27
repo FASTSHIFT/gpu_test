@@ -74,7 +74,7 @@ void gpu_log_printf(enum gpu_log_level_type_e level, const char* func, const cha
 
 #else
     static const char* prompt[_GPU_LOG_LEVEL_LAST] = {
-        "INFO", "WARN", "ERRPR"
+        "INFO", "WARN", "ERROR"
     };
 
     printf("[GPU][%s] %s: %s\n", prompt[level], func, buf);
