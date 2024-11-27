@@ -4,6 +4,7 @@
 ITEM_DEF(blit)
 ITEM_DEF(blit_pattern_offset)
 ITEM_DEF(clear)
+ITEM_DEF(gaussian_blur)
 ITEM_DEF(image_a8)
 ITEM_DEF(image_full_screen)
 ITEM_DEF(image_full_screen_rotate_90deg)
