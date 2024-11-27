@@ -85,7 +85,7 @@ def update_inc_file():
 
 if __name__ == "__main__":
     # Check the number of command line arguments
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] == '-h'):
         print("Usage: python test_case_gen.py [<test_name>]")
         sys.exit(1)
 
