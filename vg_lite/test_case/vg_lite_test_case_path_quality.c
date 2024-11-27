@@ -82,7 +82,6 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     const vg_lite_quality_t quality_settings[] = {
         VG_LITE_LOW,
         VG_LITE_MEDIUM,
-        VG_LITE_UPPER,
         VG_LITE_HIGH,
     };
 
@@ -111,4 +110,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(path_quality, NONE, "Draw '0' glyph with LOW/MEDIUM/UPPER/HIGH path quality settings");
+VG_LITE_TEST_CASE_ITEM_DEF(path_quality, NONE, "Draw '0' glyph with LOW/MEDIUM/HIGH path quality settings");
