@@ -162,13 +162,13 @@ void vg_lite_test_context_destroy(struct vg_lite_test_context_s* ctx)
 
 bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const struct vg_lite_test_item_s* item)
 {
+    vg_lite_test_context_cleanup(ctx);
+
     if (item->feature != gcFEATURE_BIT_VG_NONE && !vg_lite_query_feature(item->feature)) {
         GPU_LOG_WARN("Skipping test case: %s (feature %s not supported)", item->name, vg_lite_test_feature_string(item->feature));
         vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT, true);
         return true;
     }
-
-    vg_lite_test_context_cleanup(ctx);
 
     GPU_LOG_INFO("Running test case: %s", item->name);
 
