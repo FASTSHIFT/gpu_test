@@ -104,8 +104,8 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     vg_lite_identity(grad_mat_p);
 
     struct vg_lite_test_path_s* path = vg_lite_test_context_init_path(ctx, VG_LITE_FP32);
-    vg_lite_test_path_set_bounding_box(path, 0, 0, 200, 200);
-    vg_lite_test_path_append_rect(path, 0, 0, 200, 100, 10);
+    vg_lite_test_path_set_bounding_box(path, 0, 0, 100, 100);
+    vg_lite_test_path_append_rect(path, 0, 0, 100, 100, 10);
     vg_lite_test_path_end(path);
 
     VG_LITE_TEST_CHECK_ERROR_RETURN(
