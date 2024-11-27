@@ -75,6 +75,12 @@ def update_inc_file():
         if match:
             item_defs.append(f"ITEM_DEF({match.group(1)})")
 
+    # Sort the entries by name
+    item_defs = sorted(item_defs, key=lambda x: x.split('(')[1][:-1])
+    print(f"Found {len(item_defs)} test cases:")
+    for item_def in item_defs:
+        print(f"  {item_def}")
+
     # Write to the .inc file
     with open(inc_file, 'w', encoding='utf-8') as file:
         file.write(header_comment)
