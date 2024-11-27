@@ -95,7 +95,7 @@ vg_lite_test_path_t* vg_lite_test_path_create(vg_lite_format_t data_format)
     GPU_ASSERT(vg_lite_init_path(
                    &path->base,
                    data_format,
-                   VG_LITE_MEDIUM,
+                   VG_LITE_HIGH,
                    0,
                    NULL,
                    0, 0, 0, 0)
@@ -121,7 +121,7 @@ void vg_lite_test_path_reset(vg_lite_test_path_t* path, vg_lite_format_t data_fo
     GPU_ASSERT_NULL(path);
     path->base.path_length = 0;
     path->base.format = data_format;
-    path->base.quality = VG_LITE_MEDIUM;
+    path->base.quality = VG_LITE_HIGH;
     path->base.path_type = VG_LITE_DRAW_ZERO;
     path->format_len = vg_lite_test_path_format_len(data_format);
     path->has_transform = false;
