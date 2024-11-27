@@ -141,4 +141,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(linear_gradient, NONE, "Draw a RGB linear gradient");
+VG_LITE_TEST_CASE_ITEM_DEF(gradient_linear, NONE, "Draw a RGB linear gradient");
