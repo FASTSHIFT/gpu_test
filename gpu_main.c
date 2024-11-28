@@ -100,7 +100,7 @@ static void show_usage(const char* progname, int exitcode)
     printf("  --target <string> Target render image size(px), default is 480x480. Example: "
            "<decimal-value width>x<decimal-value height>\n");
     printf("  --loop-count <int> Stress mode loop count, default is 10000.\n");
-    printf("  --cpu-freq <int> CPU frequency in MHz, default is 200.\n");
+    printf("  --cpu-freq <int> CPU frequency in MHz, default is 0 (auto).\n");
     printf("  --fbdev <string> Framebuffer device path.\n");
 
     exit(exitcode);
@@ -194,7 +194,6 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     param->target_width = GPU_TEST_DESIGN_WIDTH;
     param->target_height = GPU_TEST_DESIGN_WIDTH;
     param->run_loop_count = 10000;
-    param->cpu_freq = 200;
 
     int ch;
     int longindex = 0;
@@ -253,6 +252,6 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
     GPU_LOG_INFO("Testcase name: %s", param->testcase_name);
     GPU_LOG_INFO("Screenshot: %s", param->screenshot_en ? "enable" : "disable");
     GPU_LOG_INFO("Loop count: %d", param->run_loop_count);
-    GPU_LOG_INFO("CPU frequency: %d MHz", param->cpu_freq);
+    GPU_LOG_INFO("CPU frequency: %d MHz (0 means auto)", param->cpu_freq);
     GPU_LOG_INFO("Framebuffer device: %s", param->fbdev_path);
 }

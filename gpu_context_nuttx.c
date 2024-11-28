@@ -40,7 +40,7 @@
  *      DEFINES
  *********************/
 
-#define TICK_TO_USEC(tick) ((tick) / g_cpu_freq)
+#define TICK_TO_USEC(tick) ((tick) / g_cpu_freq_mhz)
 
 /**********************
  *      TYPEDEFS
@@ -51,12 +51,13 @@
  **********************/
 
 static uint32_t tick_get_cb(void);
+static uint32_t calc_avg_cpu_freq(void);
 
 /**********************
  *  STATIC VARIABLES
  **********************/
 
-static uint32_t g_cpu_freq = 200; /* default CPU frequency 200 MHz */
+static uint32_t g_cpu_freq_mhz = 0;
 
 /**********************
  *      MACROS
@@ -98,26 +99,29 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
     gpu_init();
 #endif
 
-    if (ctx->param.cpu_freq <= 0) {
-        GPU_LOG_ERROR("Invalid CPU frequency: %d", ctx->param.cpu_freq);
+    /* Default CPU frequency 200 MHz */
+    uint32_t cpu_freq_hz = 200 * 1000 * 1000;
+
+    if (ctx->param.cpu_freq > 0) {
+        g_cpu_freq_mhz = ctx->param.cpu_freq;
+    } else {
+        /* Enable performance counter */
+        up_perf_init((void*)(uintptr_t)cpu_freq);
+
+        /* Calculate average CPU frequency */
+        g_cpu_freq_mhz = calc_avg_cpu_freq() / (1000 * 1000);
+    }
+
+    GPU_LOG_INFO("CPU frequency: %" PRIu32 " MHz", g_cpu_freq_mhz);
+
+    if (g_cpu_freq_mhz == 0) {
+        GPU_LOG_ERROR("Failed to calculate CPU frequency");
         return;
     }
 
-    uint32_t cpu_freq = ctx->param.cpu_freq * 1000 * 1000;
-    up_perf_init((void*)(uintptr_t)cpu_freq);
-    GPU_LOG_INFO("perf enabled, cpu_freq = %" PRIu32, cpu_freq);
+    cpu_freq_hz = g_cpu_freq_mhz * 1000 * 1000;
 
-    g_cpu_freq = ctx->param.cpu_freq;
-
-    uint32_t start_tick = up_perf_gettime();
-    usleep(1000);
-    uint32_t elapsed_tick = up_perf_gettime() - start_tick;
-    uint32_t elapsed_time = TICK_TO_USEC(elapsed_tick);
-    GPU_LOG_INFO("perf test elapsed_tick(%" PRIu32 "): %" PRIu32 " us", elapsed_tick, elapsed_time);
-
-    if (elapsed_time < 1000 || elapsed_time - 1000 > 300) {
-        GPU_LOG_WARN("CPU frequency: %d may wrong", g_cpu_freq);
-    }
+    up_perf_init((void*)(uintptr_t)cpu_freq_hz);
 
     gpu_tick_set_cb(tick_get_cb);
 }
@@ -160,6 +164,20 @@ static uint32_t tick_get_cb(void)
     cur_tick_us += TICK_TO_USEC(elaps);
     prev_tick = act_time;
     return cur_tick_us;
+}
+
+static uint32_t calc_avg_cpu_freq(void)
+{
+    uint32_t start_tick = up_perf_gettime();
+
+    /* Wait 1 second*/
+    usleep(1000 * 1000);
+
+    uint32_t elapsed_tick = up_perf_gettime() - start_tick;
+
+    GPU_LOG_INFO("perf elapsed_tick: %" PRIu32, elapsed_tick);
+
+    return elapsed_tick;
 }
 
 #endif /* GPU_TEST_CONTEXT_NUTTX_ENABLE */
