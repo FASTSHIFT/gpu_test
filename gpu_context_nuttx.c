@@ -99,8 +99,7 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
     gpu_init();
 #endif
 
-    /* Default CPU frequency 200 MHz */
-    uint32_t cpu_freq_hz = 200 * 1000 * 1000;
+    uint32_t cpu_freq_hz = 1;
 
     if (ctx->param.cpu_freq > 0) {
         g_cpu_freq_mhz = ctx->param.cpu_freq;
@@ -109,7 +108,7 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
         up_perf_init((void*)(uintptr_t)cpu_freq_hz);
 
         /* Calculate average CPU frequency */
-        g_cpu_freq_mhz = calc_avg_cpu_freq() / (1000 * 1000);
+        g_cpu_freq_mhz = calc_avg_cpu_freq() / 1000000;
     }
 
     GPU_LOG_INFO("CPU frequency: %" PRIu32 " MHz", g_cpu_freq_mhz);
@@ -119,7 +118,7 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
         return;
     }
 
-    cpu_freq_hz = g_cpu_freq_mhz * 1000 * 1000;
+    cpu_freq_hz = g_cpu_freq_mhz * 1000000;
 
     up_perf_init((void*)(uintptr_t)cpu_freq_hz);
 
