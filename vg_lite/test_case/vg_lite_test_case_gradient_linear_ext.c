@@ -128,4 +128,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(gradient_linear_ext, NONE, "Add your test case instructions here.");
+VG_LITE_TEST_CASE_ITEM_DEF(gradient_linear_ext, LINEAR_GRADIENT_EXT, "Add your test case instructions here.");
