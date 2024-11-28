@@ -106,7 +106,7 @@ void gpu_test_context_setup(struct gpu_test_context_s* ctx)
         g_cpu_freq_mhz = ctx->param.cpu_freq;
     } else {
         /* Enable performance counter */
-        up_perf_init((void*)(uintptr_t)cpu_freq);
+        up_perf_init((void*)(uintptr_t)cpu_freq_hz);
 
         /* Calculate average CPU frequency */
         g_cpu_freq_mhz = calc_avg_cpu_freq() / (1000 * 1000);
