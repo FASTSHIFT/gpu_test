@@ -68,7 +68,7 @@ def update_inc_file():
     
     # Gather ITEM_DEF entries
     item_defs = []
-    pattern = re.compile(r'vg_lite_test_case_(\w+)\.c')
+    pattern = re.compile(r'vg_lite_test_case_(\w+)\.c$')
     
     for filename in os.listdir('.'):
         match = pattern.match(filename)
