@@ -75,7 +75,7 @@ static void vg_lite_test_context_record(
     struct vg_lite_test_context_s* ctx,
     const struct vg_lite_test_item_s* item,
     vg_lite_error_t error,
-    bool passed);
+    const char* result_str);
 static void vg_lite_test_context_error_to_remark(struct vg_lite_test_context_s* ctx, vg_lite_error_t error);
 static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s* ctx, const char* name);
 
@@ -167,7 +167,7 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
     if (item->feature != gcFEATURE_BIT_VG_NONE && !vg_lite_query_feature(item->feature)) {
         snprintf(ctx->vg_error_remark_text, sizeof(ctx->vg_error_remark_text), "Feature '%s' not supported", vg_lite_test_feature_string(item->feature));
         GPU_LOG_WARN("Skipping test case: %s %s", item->name, ctx->vg_error_remark_text);
-        vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT, true);
+        vg_lite_test_context_record(ctx, item, VG_LITE_NOT_SUPPORT, "SKIP");
         return true;
     }
 
@@ -207,7 +207,7 @@ bool vg_lite_test_context_run_item(struct vg_lite_test_context_s* ctx, const str
 
     bool passed = (error == VG_LITE_SUCCESS && screenshot_cmp_pass);
 
-    vg_lite_test_context_record(ctx, item, error, passed);
+    vg_lite_test_context_record(ctx, item, error, passed ? "PASS" : "FAIL");
 
     return passed;
 }
@@ -351,7 +351,7 @@ static void vg_lite_test_context_record(
     struct vg_lite_test_context_s* ctx,
     const struct vg_lite_test_item_s* item,
     vg_lite_error_t error,
-    bool passed)
+    const char* result_str)
 {
     GPU_ASSERT_NULL(ctx);
     GPU_ASSERT_NULL(item);
@@ -390,7 +390,7 @@ static void vg_lite_test_context_record(
         vg_lite_test_error_string(error),
         ctx->vg_error_remark_text,
         ctx->screenshot_remark_text,
-        passed ? "PASS" : "FAIL");
+        result_str);
 
     gpu_recorder_write_string(ctx->gpu_ctx->recorder, result);
 }
