@@ -91,7 +91,7 @@ int gpu_dir_create(const char* dir_path)
     if (retval == 0) {
         GPU_LOG_INFO("OK");
     } else {
-        GPU_LOG_ERROR("failed: %d", dir_path, errno);
+        GPU_LOG_ERROR("failed: %d", errno);
     }
 
     return retval;
