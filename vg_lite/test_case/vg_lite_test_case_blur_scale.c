@@ -94,6 +94,10 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     vg_lite_identity(&matrix);
     vg_lite_scale(BLUR_SCALE, BLUR_SCALE, &matrix);
 
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_set_CLUT(
+        sizeof(imgae_cogwheel_index8_color_table) / sizeof(vg_lite_uint32_t),
+        (vg_lite_uint32_t*)imgae_cogwheel_index8_color_table));
+
     /* Blit to temp buffer */
     VG_LITE_TEST_CHECK_ERROR_RETURN(
         vg_lite_blit(

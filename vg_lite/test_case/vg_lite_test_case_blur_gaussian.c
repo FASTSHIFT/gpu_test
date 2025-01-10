@@ -74,6 +74,10 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
 {
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_gaussian_filter(0.2f, 0.1f, 0.1f));
 
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_set_CLUT(
+        sizeof(imgae_cogwheel_index8_color_table) / sizeof(vg_lite_uint32_t),
+        (vg_lite_uint32_t*)imgae_cogwheel_index8_color_table));
+
     vg_lite_matrix_t matrix;
     vg_lite_test_context_get_transform(ctx, &matrix);
 
