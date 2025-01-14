@@ -263,11 +263,6 @@ void vg_lite_test_context_load_src_image(
         dest += buffer->stride;
         src += image_stride;
     }
-
-    if (format == VG_LITE_A4 || format == VG_LITE_A8) {
-        GPU_LOG_INFO("Image loaded with alpha format");
-        buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
-    }
 }
 
 void vg_lite_test_context_set_transform(struct vg_lite_test_context_s* ctx, const vg_lite_matrix_t* matrix)

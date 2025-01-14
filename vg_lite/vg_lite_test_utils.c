@@ -27,8 +27,8 @@
 
 #include "vg_lite_test_utils.h"
 #include "../gpu_assert.h"
-#include "../gpu_utils.h"
 #include "../gpu_math.h"
+#include "../gpu_utils.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <string.h>
@@ -251,8 +251,14 @@ struct gpu_buffer_s* vg_lite_test_buffer_alloc(vg_lite_buffer_t* buffer, uint32_
     buffer->stride = stride;
 
     buffer->tiled = VG_LITE_LINEAR;
-    buffer->image_mode = VG_LITE_NORMAL_IMAGE_MODE;
     buffer->transparency_mode = VG_LITE_IMAGE_OPAQUE;
+
+    if (format == VG_LITE_A4 || format == VG_LITE_A8) {
+        GPU_LOG_INFO("Alpha format: %d, use multiply image mode", (int)format);
+        buffer->image_mode = VG_LITE_MULTIPLY_IMAGE_MODE;
+    } else {
+        buffer->image_mode = VG_LITE_NORMAL_IMAGE_MODE;
+    }
 
     return gpu_buffer;
 }
