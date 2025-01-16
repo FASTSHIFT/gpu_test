@@ -26,11 +26,18 @@ else
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/graphics/vg_lite_tvg
 endif
 
+# Basic definitions
 CFLAGS += -DGPU_TEST_CONTEXT_DEFAULT_DISABLE=1
 CFLAGS += -DGPU_TEST_CONTEXT_LINUX_DISABLE=1
 CFLAGS += -DGPU_TEST_CONTEXT_NUTTX_ENABLE=1
 CFLAGS += -DGPU_OUTPUT_DIR_DEFAULT=\"/data/gpu\"
 CFLAGS += -DGPU_LOG_USE_SYSLOG=1
+
+# NuttX cache definitions
+CFLAGS += -DGPU_CACHE_INCLUDE_H=\"nuttx/cache.h\"
+CFLAGS += -DGPU_CACHE_INVALIDATE_FUNC=up_invalidate_dcache
+CFLAGS += -DGPU_CACHE_CLEAN_FUNC=up_clean_dcache
+CFLAGS += -DGPU_CACHE_FLUSH_FUNC=up_flush_dcache
 
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/../external/libpng
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/../external/libpng/libpng
