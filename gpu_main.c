@@ -189,6 +189,8 @@ static void parse_commandline(int argc, char** argv, struct gpu_test_param_s* pa
 {
     /* set default param */
     memset(param, 0, sizeof(struct gpu_test_param_s));
+    param->argc = argc;
+    param->argv = argv;
     param->mode = GPU_TEST_MODE_DEFAULT;
     param->output_dir = GPU_OUTPUT_DIR_DEFAULT;
     param->target_width = GPU_TEST_DESIGN_WIDTH;

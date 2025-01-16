@@ -55,6 +55,8 @@ enum gpu_test_mode_e {
 };
 
 struct gpu_test_param_s {
+    int argc;
+    char** argv;
     enum gpu_test_mode_e mode;
     const char* output_dir;
     const char* testcase_name;

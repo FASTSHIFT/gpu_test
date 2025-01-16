@@ -29,7 +29,9 @@
 #include "gpu_context.h"
 #include "gpu_recorder.h"
 #include "gpu_tick.h"
+#include "gpu_utils.h"
 #include "vg_lite/vg_lite_test.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 /*********************
@@ -43,6 +45,8 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
+
+static void gpu_test_write_header(struct gpu_test_context_s* ctx);
 
 /**********************
  *  STATIC VARIABLES
@@ -61,6 +65,7 @@ int gpu_test_run(struct gpu_test_context_s* ctx)
     switch (ctx->param.mode) {
     case GPU_TEST_MODE_DEFAULT:
         ctx->recorder = gpu_recorder_create(ctx->param.output_dir, "vg_lite");
+        gpu_test_write_header(ctx);
         break;
 
     case GPU_TEST_MODE_STRESS:
@@ -84,3 +89,19 @@ int gpu_test_run(struct gpu_test_context_s* ctx)
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+
+static void gpu_test_write_header(struct gpu_test_context_s* ctx)
+{
+    if (!ctx->recorder) {
+        return;
+    }
+
+    gpu_recorder_write_string(ctx->recorder, "Command Line,");
+
+    for (int i = 0; i < ctx->param.argc; i++) {
+        gpu_recorder_write_string(ctx->recorder, ctx->param.argv[i]);
+        gpu_recorder_write_string(ctx->recorder, " ");
+    }
+
+    gpu_recorder_write_string(ctx->recorder, "\n\n");
+}
