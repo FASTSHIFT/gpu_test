@@ -28,6 +28,7 @@
 #include "vg_lite_test_context.h"
 #include "../gpu_assert.h"
 #include "../gpu_buffer.h"
+#include "../gpu_cache.h"
 #include "../gpu_context.h"
 #include "../gpu_recorder.h"
 #include "../gpu_screenshot.h"
@@ -263,6 +264,9 @@ void vg_lite_test_context_load_src_image(
         dest += buffer->stride;
         src += image_stride;
     }
+
+    /* Make sure the buffer is flushed to memory */
+    gpu_cache_flush(buffer->memory, buffer->stride * buffer->height);
 }
 
 void vg_lite_test_context_set_transform(struct vg_lite_test_context_s* ctx, const vg_lite_matrix_t* matrix)
@@ -321,6 +325,7 @@ static void vg_lite_test_context_cleanup(struct vg_lite_test_context_s* ctx)
     /* Clear the target buffer */
     size_t target_size = ctx->target_buffer.stride * ctx->target_buffer.height;
     memset(ctx->target_buffer.memory, 0, target_size);
+    gpu_cache_flush(ctx->target_buffer.memory, target_size);
 
     /* Clear the source buffer info */
     memset(&ctx->src_buffer, 0, sizeof(vg_lite_buffer_t));
@@ -443,6 +448,9 @@ static bool vg_lite_test_context_check_screenshot(struct vg_lite_test_context_s*
         GPU_LOG_ERROR("%s", ctx->screenshot_remark_text);
         goto failed;
     }
+
+    /* Make sure the buffer fully loaded to memory */
+    gpu_cache_invalidate(target_buffer.data, target_buffer.stride * target_buffer.height);
 
     for (int y = 0; y < target_buffer.height; y++) {
         for (int x = 0; x < target_buffer.width; x++) {

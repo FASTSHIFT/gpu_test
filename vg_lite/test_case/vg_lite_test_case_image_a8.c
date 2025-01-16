@@ -25,6 +25,7 @@
  *      INCLUDES
  *********************/
 
+#include "../../gpu_cache.h"
 #include "../vg_lite_test_context.h"
 #include "../vg_lite_test_path.h"
 #include "../vg_lite_test_utils.h"
@@ -135,6 +136,8 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         memset(dst, alpha, image->width);
         dst += image->stride;
     }
+
+    gpu_cache_flush(image->memory, image->stride * image->height);
 
     vg_lite_test_path_t* path = vg_lite_test_context_init_path(ctx, VG_LITE_FP32);
     vg_lite_test_path_set_bounding_box(path, 0, 0, 64, 64);

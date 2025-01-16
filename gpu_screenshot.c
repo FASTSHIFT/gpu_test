@@ -28,6 +28,7 @@
 #include "gpu_screenshot.h"
 #include "gpu_assert.h"
 #include "gpu_buffer.h"
+#include "gpu_cache.h"
 #include "gpu_log.h"
 #include <png.h>
 #include <stdio.h>
@@ -82,6 +83,9 @@ int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer)
         GPU_LOG_ERROR("Unsupported color format: %d", buffer->format);
         return -1;
     }
+
+    /* Invalidate the cache to ensure that the buffer data is up-to-date. */
+    gpu_cache_invalidate(buffer->data, buffer->stride * buffer->height);
 
     /* Write the PNG image. */
     if (!png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL)) {
