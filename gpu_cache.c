@@ -60,6 +60,9 @@ void gpu_cache_invalidate(void* addr, size_t len)
 {
 #ifdef GPU_CACHE_INVALIDATE_FUNC
     GPU_CACHE_INVALIDATE_FUNC((uintptr_t)addr, (uintptr_t)addr + len);
+#else
+    (void)addr;
+    (void)len;
 #endif
 }
 
@@ -67,6 +70,9 @@ void gpu_cache_clean(void* addr, size_t len)
 {
 #ifdef GPU_CACHE_CLEAN_FUNC
     GPU_CACHE_CLEAN_FUNC((uintptr_t)addr, (uintptr_t)addr + len);
+#else
+    (void)addr;
+    (void)len;
 #endif
 }
 
@@ -74,6 +80,9 @@ void gpu_cache_flush(void* addr, size_t len)
 {
 #ifdef GPU_CACHE_FLUSH_FUNC
     GPU_CACHE_FLUSH_FUNC((uintptr_t)addr, (uintptr_t)addr + len);
+#else
+    (void)addr;
+    (void)len;
 #endif
 }
 
