@@ -74,7 +74,7 @@ struct gpu_buffer_s* gpu_buffer_alloc(uint32_t width, uint32_t height, enum gpu_
     GPU_ASSERT_NULL(buffer->data_unaligned);
     buffer->data = (void*)GPU_ALIGN_UP(buffer->data_unaligned, align);
 
-    GPU_LOG_INFO("Allocated buffer %p, format %d, size W%dxH%d, stride %d, data %p",
+    GPU_LOG_DEBUG("Allocated buffer %p, format %d, size W%dxH%d, stride %d, data %p",
         buffer, format, width, height, stride, buffer->data);
 
     return buffer;
@@ -86,7 +86,7 @@ void gpu_buffer_free(struct gpu_buffer_s* buffer)
     GPU_ASSERT_NULL(buffer->data);
     GPU_ASSERT_NULL(buffer->data_unaligned);
 
-    GPU_LOG_INFO("Freed buffer %p, format %d, size W%dxH%d, stride %d, data %p",
+    GPU_LOG_DEBUG("Freed buffer %p, format %d, size W%dxH%d, stride %d, data %p",
         buffer, buffer->format, buffer->width, buffer->height, buffer->stride, buffer->data);
     free(buffer->data_unaligned);
 

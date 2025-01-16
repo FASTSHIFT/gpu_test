@@ -36,6 +36,11 @@ extern "C" {
  *      DEFINES
  *********************/
 
+#define GPU_LOG_DEBUG(format, ...)      \
+    gpu_log_printf(GPU_LOG_LEVEL_DEBUG, \
+        __func__,                       \
+        format,                         \
+        ##__VA_ARGS__)
 #define GPU_LOG_INFO(format, ...)      \
     gpu_log_printf(GPU_LOG_LEVEL_INFO, \
         __func__,                      \
@@ -57,6 +62,7 @@ extern "C" {
  **********************/
 
 enum gpu_log_level_type_e {
+    GPU_LOG_LEVEL_DEBUG,
     GPU_LOG_LEVEL_INFO,
     GPU_LOG_LEVEL_WARN,
     GPU_LOG_LEVEL_ERROR,
