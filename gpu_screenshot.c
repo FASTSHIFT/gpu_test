@@ -31,6 +31,7 @@
 #include "gpu_cache.h"
 #include "gpu_log.h"
 #include <png.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -69,14 +70,23 @@ int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer)
     image.width = buffer->width;
     image.height = buffer->height;
 
+    const struct gpu_buffer_s* target_buffer = buffer;
+    bool need_convert = false;
+
     switch (buffer->format) {
     case GPU_COLOR_FORMAT_BGR888:
         image.format = PNG_FORMAT_BGR;
         break;
 
     case GPU_COLOR_FORMAT_BGRA8888:
-    case GPU_COLOR_FORMAT_BGRX8888:
         image.format = PNG_FORMAT_BGRA;
+        break;
+
+    case GPU_COLOR_FORMAT_BGR565:
+    case GPU_COLOR_FORMAT_BGRA5658:
+    case GPU_COLOR_FORMAT_BGRX8888:
+        image.format = PNG_FORMAT_BGR;
+        need_convert = true;
         break;
 
     default:
@@ -87,14 +97,87 @@ int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer)
     /* Invalidate the cache to ensure that the buffer data is up-to-date. */
     gpu_cache_invalidate(buffer->data, buffer->stride * buffer->height);
 
-    /* Write the PNG image. */
-    if (!png_image_write_to_file(&image, path, 0, buffer->data, buffer->stride, NULL)) {
-        GPU_LOG_ERROR("Failed");
-        return -1;
+    struct gpu_buffer_s* temp_buffer = NULL;
+    if (need_convert) {
+        temp_buffer = gpu_buffer_alloc(
+            buffer->width,
+            buffer->height,
+            GPU_COLOR_FORMAT_BGR888,
+            image.width * sizeof(gpu_color24_t),
+            8);
+
+        if (!temp_buffer) {
+            GPU_LOG_ERROR("Failed to allocate temporary buffer for conversion");
+            return -1;
+        }
+
+        switch (buffer->format) {
+        case GPU_COLOR_FORMAT_BGR565: {
+            for (int y = 0; y < buffer->height; y++) {
+                const gpu_color16_t* src = (const gpu_color16_t*)((uint8_t*)buffer->data + y * buffer->stride);
+                gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)temp_buffer->data + y * temp_buffer->stride);
+
+                for (int x = 0; x < buffer->width; x++) {
+                    dest->ch.blue = src->ch.blue * 0xFF / 0x1F;
+                    dest->ch.green = src->ch.green * 0xFF / 0x3F;
+                    dest->ch.red = src->ch.red * 0xFF / 0x1F;
+                    src++;
+                    dest++;
+                }
+            }
+        } break;
+
+        case GPU_COLOR_FORMAT_BGRA5658: {
+            for (int y = 0; y < buffer->height; y++) {
+                const gpu_color16_alpha_t* src = (const gpu_color16_alpha_t*)((uint8_t*)buffer->data + y * buffer->stride);
+                gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)temp_buffer->data + y * temp_buffer->stride);
+                for (int x = 0; x < buffer->width; x++) {
+                    dest->ch.blue = src->ch.blue * 0xFF / 0x1F;
+                    dest->ch.green = src->ch.green * 0xFF / 0x3F;
+                    dest->ch.red = src->ch.red * 0xFF / 0x1F;
+                    src++;
+                    dest++;
+                }
+            }
+        } break;
+
+        case GPU_COLOR_FORMAT_BGRX8888: {
+            for (int y = 0; y < buffer->height; y++) {
+                const gpu_color32_t* src = (const gpu_color32_t*)((uint8_t*)buffer->data + y * buffer->stride);
+                gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)temp_buffer->data + y * temp_buffer->stride);
+                for (int x = 0; x < buffer->width; x++) {
+                    dest->ch.blue = src->ch.blue;
+                    dest->ch.green = src->ch.green;
+                    dest->ch.red = src->ch.red;
+                    src++;
+                    dest++;
+                }
+            }
+        } break;
+
+        default:
+            GPU_LOG_ERROR("Unsupported color format: %d", buffer->format);
+            gpu_buffer_free(temp_buffer);
+            return -1;
+        }
+
+        /* Change the target buffer to the temporary buffer for conversion. */
+        target_buffer = temp_buffer;
     }
 
-    GPU_LOG_INFO("Successed");
-    return 0;
+    /* Write the PNG image. */
+    int is_success = png_image_write_to_file(&image, path, 0, target_buffer->data, target_buffer->stride, NULL);
+    if (is_success) {
+        GPU_LOG_INFO("Successed");
+    } else {
+        GPU_LOG_ERROR("Failed");
+    }
+
+    if (temp_buffer) {
+        gpu_buffer_free(temp_buffer);
+    }
+
+    return is_success ? 0 : -1;
 }
 
 struct gpu_buffer_s* gpu_screenshot_load(const char* path)
