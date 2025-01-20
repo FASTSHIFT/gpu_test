@@ -12,11 +12,11 @@ menuconfig TESTING_GPU_TEST
 if TESTING_GPU_TEST
 
 config TESTING_GPU_TEST_PRIORITY
-	int "VG-Lite Example task priority"
+	int "GPU Test task priority"
 	default 100
 
 config TESTING_GPU_TEST_STACKSIZE
-	int "VG-Lite Example stack size"
+	int "GPU Test stack size"
 	default 32768
 
 config TESTING_GPU_TEST_VG_LITE_INCLUDE
