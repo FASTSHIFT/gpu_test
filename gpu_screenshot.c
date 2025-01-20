@@ -43,6 +43,8 @@
  *  STATIC PROTOTYPES
  **********************/
 
+static bool convert_color_to_bgr888(struct gpu_buffer_s* dest_buffer, const struct gpu_buffer_s* src_buffer);
+
 /**********************
  *  STATIC VARIABLES
  **********************/
@@ -111,52 +113,7 @@ int gpu_screenshot_save(const char* path, const struct gpu_buffer_s* buffer)
             return -1;
         }
 
-        switch (buffer->format) {
-        case GPU_COLOR_FORMAT_BGR565: {
-            for (int y = 0; y < buffer->height; y++) {
-                const gpu_color16_t* src = (const gpu_color16_t*)((uint8_t*)buffer->data + y * buffer->stride);
-                gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)temp_buffer->data + y * temp_buffer->stride);
-
-                for (int x = 0; x < buffer->width; x++) {
-                    dest->ch.blue = src->ch.blue * 0xFF / 0x1F;
-                    dest->ch.green = src->ch.green * 0xFF / 0x3F;
-                    dest->ch.red = src->ch.red * 0xFF / 0x1F;
-                    src++;
-                    dest++;
-                }
-            }
-        } break;
-
-        case GPU_COLOR_FORMAT_BGRA5658: {
-            for (int y = 0; y < buffer->height; y++) {
-                const gpu_color16_alpha_t* src = (const gpu_color16_alpha_t*)((uint8_t*)buffer->data + y * buffer->stride);
-                gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)temp_buffer->data + y * temp_buffer->stride);
-                for (int x = 0; x < buffer->width; x++) {
-                    dest->ch.blue = src->ch.blue * 0xFF / 0x1F;
-                    dest->ch.green = src->ch.green * 0xFF / 0x3F;
-                    dest->ch.red = src->ch.red * 0xFF / 0x1F;
-                    src++;
-                    dest++;
-                }
-            }
-        } break;
-
-        case GPU_COLOR_FORMAT_BGRX8888: {
-            for (int y = 0; y < buffer->height; y++) {
-                const gpu_color32_t* src = (const gpu_color32_t*)((uint8_t*)buffer->data + y * buffer->stride);
-                gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)temp_buffer->data + y * temp_buffer->stride);
-                for (int x = 0; x < buffer->width; x++) {
-                    dest->ch.blue = src->ch.blue;
-                    dest->ch.green = src->ch.green;
-                    dest->ch.red = src->ch.red;
-                    src++;
-                    dest++;
-                }
-            }
-        } break;
-
-        default:
-            GPU_LOG_ERROR("Unsupported color format: %d", buffer->format);
+        if (!convert_color_to_bgr888(temp_buffer, buffer)) {
             gpu_buffer_free(temp_buffer);
             return -1;
         }
@@ -208,3 +165,59 @@ struct gpu_buffer_s* gpu_screenshot_load(const char* path)
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+
+static bool convert_color_to_bgr888(struct gpu_buffer_s* dest_buffer, const struct gpu_buffer_s* src_buffer)
+{
+    switch (src_buffer->format) {
+    case GPU_COLOR_FORMAT_BGR565: {
+        for (int y = 0; y < src_buffer->height; y++) {
+            const gpu_color16_t* src = (const gpu_color16_t*)((uint8_t*)src_buffer->data + y * src_buffer->stride);
+            gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)dest_buffer->data + y * dest_buffer->stride);
+
+            for (int x = 0; x < src_buffer->width; x++) {
+                dest->ch.blue = src->ch.blue * 0xFF / 0x1F;
+                dest->ch.green = src->ch.green * 0xFF / 0x3F;
+                dest->ch.red = src->ch.red * 0xFF / 0x1F;
+                src++;
+                dest++;
+            }
+        }
+    } break;
+
+    case GPU_COLOR_FORMAT_BGRA5658: {
+        for (int y = 0; y < src_buffer->height; y++) {
+            const gpu_color16_alpha_t* src = (const gpu_color16_alpha_t*)((uint8_t*)src_buffer->data + y * src_buffer->stride);
+            gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)dest_buffer->data + y * dest_buffer->stride);
+
+            for (int x = 0; x < src_buffer->width; x++) {
+                dest->ch.blue = src->ch.blue * 0xFF / 0x1F;
+                dest->ch.green = src->ch.green * 0xFF / 0x3F;
+                dest->ch.red = src->ch.red * 0xFF / 0x1F;
+                src++;
+                dest++;
+            }
+        }
+    } break;
+
+    case GPU_COLOR_FORMAT_BGRX8888: {
+        for (int y = 0; y < src_buffer->height; y++) {
+            const gpu_color32_t* src = (const gpu_color32_t*)((uint8_t*)src_buffer->data + y * src_buffer->stride);
+            gpu_color24_t* dest = (gpu_color24_t*)((uint8_t*)dest_buffer->data + y * dest_buffer->stride);
+
+            for (int x = 0; x < src_buffer->width; x++) {
+                dest->ch.blue = src->ch.blue;
+                dest->ch.green = src->ch.green;
+                dest->ch.red = src->ch.red;
+                src++;
+                dest++;
+            }
+        }
+    } break;
+
+    default:
+        GPU_LOG_ERROR("Unsupported color format: %d", src_buffer->format);
+        return false;
+    }
+
+    return true;
+}
