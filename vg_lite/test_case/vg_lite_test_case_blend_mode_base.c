@@ -82,7 +82,7 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     };
 
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
-    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, NULL, 0xAAAAAAAA));
+    VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_clear(target_buffer, NULL, 0x5A5A5A5A));
 
     const vg_lite_color_t colors[] = { 0xFF0000FF, 0xFF00FF00, 0xFFFF0000, 0xFFFFFF00 };
     const int color_len = sizeof(colors) / sizeof(vg_lite_color_t);
