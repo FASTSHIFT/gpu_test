@@ -102,8 +102,8 @@ struct gpu_fb_s* gpu_fb_create(const char* path)
         goto failed;
     }
 
-    GPU_LOG_INFO("Framebuffer device opened: %s, size: %ux%u, depth: %u",
-        path, fb->vinfo.xres, fb->vinfo.yres, fb->vinfo.bits_per_pixel);
+    GPU_LOG_INFO("Framebuffer device opened: %s, size: %ux%u, depth: %u, stride: %d",
+        path, fb->vinfo.xres, fb->vinfo.yres, fb->vinfo.bits_per_pixel, fb->finfo.line_length);
 
     return fb;
 
