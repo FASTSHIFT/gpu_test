@@ -77,8 +77,8 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
         ctx,
         target_buffer->width,
         target_buffer->height,
-        target_buffer->format,
-        target_buffer->stride);
+        VG_LITE_BGRA8888,
+        VG_LITE_TEST_STRIDE_AUTO);
 
     /* Draw 4 rectangles on the image */
     VG_LITE_TEST_CHECK_ERROR_RETURN(clear_buffer(image, 0, 0xFFFFFFFF));
@@ -112,4 +112,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(image_full_screen_rotate_90deg, NONE, "Draw full screen image with rotated 90 degrees");
+VG_LITE_TEST_CASE_ITEM_DEF(image_full_screen_rotate_90deg, NONE, "Draw BGRA8888 image on full screen with rotated 90 degrees");

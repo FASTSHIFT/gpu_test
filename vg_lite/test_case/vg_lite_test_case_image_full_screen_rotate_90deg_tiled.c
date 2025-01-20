@@ -25,6 +25,7 @@
  *      INCLUDES
  *********************/
 
+#include "../../gpu_utils.h"
 #include "../vg_lite_test_context.h"
 #include "../vg_lite_test_utils.h"
 
@@ -75,10 +76,10 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     vg_lite_buffer_t* target_buffer = vg_lite_test_context_get_target_buffer(ctx);
     vg_lite_buffer_t* image = vg_lite_test_context_alloc_src_buffer(
         ctx,
-        target_buffer->width,
-        target_buffer->height,
-        target_buffer->format,
-        target_buffer->stride);
+        GPU_ALIGN_UP(target_buffer->width, 16),
+        GPU_ALIGN_UP(target_buffer->height, 16),
+        VG_LITE_BGRA8888,
+        VG_LITE_TEST_STRIDE_AUTO);
 
     /* Draw 4 rectangles on the image */
     VG_LITE_TEST_CHECK_ERROR_RETURN(clear_buffer(image, 0, 0xFFFFFFFF));
@@ -86,6 +87,9 @@ static vg_lite_error_t on_setup(struct vg_lite_test_context_s* ctx)
     VG_LITE_TEST_CHECK_ERROR_RETURN(clear_buffer(image, image->width * 0.50f, 0xFF00FF00));
     VG_LITE_TEST_CHECK_ERROR_RETURN(clear_buffer(image, image->width * 0.75f, 0xFF0000FF));
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_finish());
+
+    /* Set the image as tiled */
+    image->tiled = VG_LITE_TILED;
 
     return VG_LITE_SUCCESS;
 }
@@ -103,9 +107,6 @@ static vg_lite_error_t on_draw(struct vg_lite_test_context_s* ctx)
     vg_lite_rotate(90, &matrix);
     vg_lite_translate(-image->width / 2, -image->height / 2, &matrix);
 
-    /* Set the image as tiled */
-    image->tiled = VG_LITE_TILED;
-
     VG_LITE_TEST_CHECK_ERROR_RETURN(vg_lite_blit(target_buffer, image, &matrix, VG_LITE_BLEND_SRC_OVER, 0, VG_LITE_FILTER_BI_LINEAR));
     return VG_LITE_SUCCESS;
 }
@@ -115,4 +116,4 @@ static vg_lite_error_t on_teardown(struct vg_lite_test_context_s* ctx)
     return VG_LITE_SUCCESS;
 }
 
-VG_LITE_TEST_CASE_ITEM_DEF(image_full_screen_rotate_90deg_tiled, NONE, "Draw full screen tiled image with rotated 90 degrees");
+VG_LITE_TEST_CASE_ITEM_DEF(image_full_screen_rotate_90deg_tiled, NONE, "Draw BGRA8888 tiled image on full screen rotated 90 degrees");
