@@ -505,6 +505,7 @@ static enum gpu_color_format_e vg_lite_test_vg_format_to_gpu_format(vg_lite_buff
         COLOR_FORMAT_MATCH(BGRA8888);
         COLOR_FORMAT_MATCH(BGRX8888);
         COLOR_FORMAT_MATCH(BGRA5658);
+        COLOR_FORMAT_MATCH(INDEX_8);
 
     default:
         break;
@@ -527,6 +528,7 @@ static vg_lite_buffer_format_t vg_lite_test_gpu_format_to_vg_format(enum gpu_col
         COLOR_FORMAT_MATCH(BGRA8888);
         COLOR_FORMAT_MATCH(BGRX8888);
         COLOR_FORMAT_MATCH(BGRA5658);
+        COLOR_FORMAT_MATCH(INDEX_8);
 
     default:
         break;

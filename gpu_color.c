@@ -68,7 +68,7 @@ uint32_t gpu_color_format_get_bpp(gpu_color_format_t format)
     case GPU_COLOR_FORMAT_BGRA5658:
         return sizeof(gpu_color_bgra5658_t) * 8;
 
-    case GPU_COLOR_FORMAT_INDEX8:
+    case GPU_COLOR_FORMAT_INDEX_8:
         return sizeof(uint8_t) * 8;
 
     default:
