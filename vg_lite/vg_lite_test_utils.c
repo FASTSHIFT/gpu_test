@@ -27,6 +27,7 @@
 
 #include "vg_lite_test_utils.h"
 #include "../gpu_assert.h"
+#include "../gpu_cache.h"
 #include "../gpu_math.h"
 #include "../gpu_utils.h"
 #include <inttypes.h>
@@ -398,6 +399,22 @@ void vg_lite_test_transform_retangle(vg_lite_rectangle_t* rect, const vg_lite_ma
     rect->y = trans_y1;
     rect->width = trans_x2 - trans_x1 + 1;
     rect->height = trans_y2 - trans_y1 + 1;
+}
+
+void vg_lite_test_fill_gray_gradient(vg_lite_buffer_t* buffer)
+{
+    GPU_ASSERT_NULL(buffer);
+    GPU_ASSERT_NULL(buffer->memory);
+    uint8_t* dst = buffer->memory;
+
+    /* Fill gray gradient */
+    for (int y = 0; y < buffer->height; y++) {
+        uint8_t color = y * 0xFF / buffer->height;
+        memset(dst, color, buffer->stride);
+        dst += buffer->stride;
+    }
+
+    gpu_cache_flush(buffer->memory, buffer->stride * buffer->height);
 }
 
 /**********************
