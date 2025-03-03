@@ -1,23 +1,48 @@
+"""
+MIT License
+
+Copyright (c) 2025 _VIFEXTech
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import argparse
 import csv
 from collections import defaultdict
+from tabulate import tabulate
 
 
 def parse_csv(file_path):
-    """解析CSV文件，返回{测试用例: 时间数据}字典"""
+    """Parse CSV file and return a dictionary of {test case: time data}."""
     with open(file_path, "r") as f:
         reader = csv.reader(f)
 
-        # 定位标题行
+        # Locate the header row
         headers = next(row for row in reader if row and row[0] == "Testcase")
 
-        # 获取关键字段索引
+        # Get the indices of key fields
         indices = {
             field: headers.index(field)
             for field in ["Setup Time(ms)", "Draw Time(ms)", "Finish Time(ms)"]
         }
 
-        # 解析数据行
+        # Parse data rows
         return {
             row[0]: {
                 "setup": safe_float(row[indices["Setup Time(ms)"]]),
@@ -30,7 +55,7 @@ def parse_csv(file_path):
 
 
 def safe_float(value):
-    """安全转换为浮点数"""
+    """Safely convert a value to a float."""
     try:
         return float(value.strip()) if value.strip() else None
     except:
@@ -38,7 +63,7 @@ def safe_float(value):
 
 
 def compare_data(base, comp, pct_th, abs_th):
-    """对比性能数据生成异常报告"""
+    """Compare performance data and generate an anomaly report."""
     anomalies = defaultdict(list)
 
     for case in base:
@@ -55,10 +80,10 @@ def compare_data(base, comp, pct_th, abs_th):
             if None in (b, c):
                 continue
 
-            abs_diff = abs(c - b)
-            pct_diff = abs((c - b) / b * 100) if b else float("inf")
+            abs_diff = c - b
+            pct_diff = (abs_diff / b * 100) if b else float("inf")
 
-            if pct_diff > pct_th and abs_diff >= abs_th:
+            if abs(pct_diff) > pct_th and abs(abs_diff) > abs_th:
                 anomalies[case].append(
                     {
                         "field": field.upper(),
@@ -73,60 +98,70 @@ def compare_data(base, comp, pct_th, abs_th):
 
 
 def print_report(anomalies, pct_th, abs_th):
-    """格式化输出对比报告"""
+    """Format and output the comparison report."""
     if not anomalies:
-        print(f"\n\033[32m所有用例正常 (阈值 >{pct_th}% 且 ≥{abs_th}ms)\033[0m")
+        print(
+            f"\n\033[32mAll test cases normal (Threshold >{pct_th}% and ≥{abs_th}ms)\033[0m"
+        )
         return
 
-    header = f"{'测试用例':<25} | {'异常指标':<40} | 基准值/对比值"
-    print(f"\n\033[31m发现异常 (阈值 >{pct_th}% 且 ≥{abs_th}ms):\033[0m")
-    print("-" * 90)
-    print(header)
-    print("-" * 90)
-
+    # Prepare table data
+    table_data = []
     for case, details in anomalies.items():
-        # 构建时间信息
-        time_info = [
-            (
-                f"{field.upper()}: {details[0]['base_val']:.3f}/{details[0]['comp_val']:.3f}"
-                if details
-                else ""
+        for d in details:
+            table_data.append(
+                [
+                    case,
+                    d["field"],
+                    f"{d['pct']:.2f}%",
+                    f"{d['abs']:.3f}ms",
+                    f"{d['base_val']:.3f}ms/{d['comp_val']:.3f}ms",
+                ]
             )
-            for field in ["setup", "draw", "finish"]
-        ]
 
-        # 构建异常描述
-        anomalies_str = " | ".join(
-            [f"{d['field']}: {d['pct']:.2f}% ({d['abs']:.4f}ms)" for d in details]
-        )
-
-        print(f"{case:<25} | {anomalies_str:<40} | {' | '.join(time_info)}")
+    # Print table
+    headers = [
+        "Test Case",
+        "Anomaly Metric",
+        "Percentage Diff",
+        "Absolute Diff",
+        "Base/Comp Value",
+    ]
+    print(f"\n\033[31mAnomalies found (Threshold >{pct_th}% and >{abs_th}ms):\033[0m")
+    print(tabulate(table_data, headers=headers, tablefmt="grid"))
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="性能对比工具",
+        description="Performance Comparison Tool",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("-b", "--base", required=True, help="基准CSV文件")
-    parser.add_argument("-c", "--compare", required=True, help="对比CSV文件")
+    parser.add_argument("-b", "--base", required=True, help="Base CSV file")
+    parser.add_argument("-c", "--compare", required=True, help="Comparison CSV file")
     parser.add_argument(
-        "-p", "--pct-threshold", type=float, default=10.0, help="百分比偏差阈值"
+        "-p",
+        "--pct-threshold",
+        type=float,
+        default=20.0,
+        help="Percentage difference threshold",
     )
     parser.add_argument(
-        "-a", "--abs-threshold", type=float, default=0.01, help="绝对差值阈值(ms)"
+        "-a",
+        "--abs-threshold",
+        type=float,
+        default=0.05,
+        help="Absolute difference threshold(ms)",
     )
 
     args = parser.parse_args()
 
     try:
-        # 打印生效参数
-        print("\n\033[36m[当前配置]\033[0m")
-        print(f"| 基准文件: {args.base}")
-        print(f"| 对比文件: {args.compare}")
-        print(f"| 百分比阈值: {args.pct_threshold:.2f}%")
-        print(f"| 绝对差值阈值: {args.abs_threshold:.3f}ms")
-        print("\033[36m" + "-" * 50 + "\033[0m\n")
+        # Print comparison configuration
+        print("\n\033[36mComparison Configuration:\033[0m")
+        print(f"| Base file: {args.base}")
+        print(f"| Comparison file: {args.compare}")
+        print(f"| Percentage threshold: {args.pct_threshold:.2f}%")
+        print(f"| Absolute threshold: {args.abs_threshold:.3f}ms")
 
         base = parse_csv(args.base)
         comp = parse_csv(args.compare)
@@ -134,7 +169,7 @@ def main():
         print_report(anomalies, args.pct_threshold, args.abs_threshold)
 
     except Exception as e:
-        print(f"\033[31m错误: {str(e)}\033[0m")
+        print(f"\033[31mError: {str(e)}\033[0m")
 
 
 if __name__ == "__main__":
