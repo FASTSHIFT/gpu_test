@@ -328,23 +328,23 @@ REGISTER_MAP = {
     0x0A1D: "VgTessAddress",  # 曲面细分缓冲区地址
     0x0A1E: "VgBorderColor",  # 边框颜色
     0x0A1F: "VgDstAlphaFactor",  # 目标Alpha因子
-    # 渐变相关
-    0x0A20: "VgGradientControl",  # 渐变控制
-    0x0A21: "VgGradientAddress",  # 渐变地址
-    0x0A22: "VgGradientStride",  # 渐变步长
-    0x0A23: "VgGradientConfig",  # 渐变配置
-    0x0A24: "VgGradientSize",  # 渐变尺寸
-    0x0A25: "VgGradientMatrix0",  # 渐变矩阵0
-    0x0A26: "VgGradientMatrix1",  # 渐变矩阵1
-    0x0A27: "VgGradientMatrix2",  # 渐变矩阵2
-    0x0A28: "VgGradientColor0",  # 渐变颜色0
-    0x0A29: "VgGradientColor1",  # 渐变颜色1
-    0x0A2A: "VgGradientColor2",  # 渐变颜色2
-    0x0A2B: "VgGradientColor3",  # 渐变颜色3
-    0x0A2C: "VgGradientStop0",  # 渐变停止点0
-    0x0A2D: "VgGradientStop1",  # 渐变停止点1
-    0x0A2E: "VgGradientStop2",  # 渐变停止点2
-    0x0A2F: "VgGradientStop3",  # 渐变停止点3
+    # Blit 变换步进参数 (c_step, x_step, y_step)
+    0x0A18: "VgBlitCStepX",  # Blit c_step[0]
+    0x0A19: "VgBlitCStepY",  # Blit c_step[1]
+    0x0A1A: "VgBlitCStepZ",  # Blit c_step[2]
+    0x0A1C: "VgBlitXStepX",  # Blit x_step[0]
+    0x0A1D: "VgBlitXStepY",  # Blit x_step[1]
+    0x0A1E: "VgBlitXStepZ",  # Blit x_step[2]
+    0x0A20: "VgBlitYStepX",  # Blit y_step[0]
+    0x0A21: "VgBlitYStepY",  # Blit y_step[1]
+    0x0A22: "VgBlitYStepZ",  # Blit y_step[2]
+    # 源图像配置 (用于 blit/draw_pattern)
+    0x0A25: "VgSourceConfig",  # 源格式配置 (filter | format | compression)
+    0x0A27: "VgSourceClip",  # 源裁剪 (通常为0)
+    0x0A29: "VgSourceAddress",  # 源图像地址
+    0x0A2B: "VgSourceStride",  # 源步长 | tiled标志
+    0x0A2D: "VgSourceOrigin",  # 源区域起点 (rect_x | rect_y << 16)
+    0x0A2F: "VgSourceSize",  # 源尺寸 (width | height << 16)
     # 图像变换矩阵
     0x0A30: "VgImageMatrix0",  # 图像矩阵0 (m00)
     0x0A31: "VgImageMatrix1",  # 图像矩阵1 (m01)
@@ -461,6 +461,84 @@ PATH_QUALITY = {
     0x02000000: "HIGH",
     0x03000000: "BETTER",
 }
+
+
+@dataclass
+class ImageDrawInfo:
+    """图片绘制信息"""
+
+    # 源图像信息
+    src_address: int = 0
+    src_format: str = "UNKNOWN"
+    src_format_raw: int = 0
+    src_width: int = 0
+    src_height: int = 0
+    src_stride: int = 0
+
+    # 目标信息
+    dst_address: int = 0
+    dst_format: str = "UNKNOWN"
+    dst_format_raw: int = 0
+    dst_width: int = 0
+    dst_height: int = 0
+    dst_stride: int = 0
+
+    # 变换矩阵
+    matrix: List[float] = None
+
+    # 混合模式
+    blend_mode: str = "SRC_OVER"
+
+    # 绘制区域
+    clip_x: int = 0
+    clip_y: int = 0
+    clip_width: int = 0
+    clip_height: int = 0
+
+    # 命令偏移（用于定位）
+    offset: int = 0
+    section_name: str = ""
+
+    def __post_init__(self):
+        if self.matrix is None:
+            self.matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+    def get_matrix_str(self) -> str:
+        """获取矩阵的字符串表示"""
+        if not self.matrix:
+            return "Identity"
+        # 检查是否为单位矩阵
+        identity = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        is_identity = all(abs(a - b) < 0.0001 for a, b in zip(self.matrix, identity))
+        if is_identity:
+            return "Identity"
+        # 检查是否为平移矩阵
+        if (
+            abs(self.matrix[0] - 1.0) < 0.0001
+            and abs(self.matrix[4] - 1.0) < 0.0001
+            and abs(self.matrix[1]) < 0.0001
+            and abs(self.matrix[3]) < 0.0001
+        ):
+            tx = self.matrix[2]
+            ty = self.matrix[5]
+            return f"Translate({tx:.1f}, {ty:.1f})"
+        # 检查是否为缩放矩阵
+        if abs(self.matrix[1]) < 0.0001 and abs(self.matrix[3]) < 0.0001:
+            sx = self.matrix[0]
+            sy = self.matrix[4]
+            tx = self.matrix[2]
+            ty = self.matrix[5]
+            if abs(tx) < 0.0001 and abs(ty) < 0.0001:
+                return f"Scale({sx:.3f}, {sy:.3f})"
+            return f"Scale({sx:.3f}, {sy:.3f})+Translate({tx:.1f}, {ty:.1f})"
+        # 一般矩阵
+        return f"[{self.matrix[0]:.3f}, {self.matrix[1]:.3f}, {self.matrix[2]:.1f}; {self.matrix[3]:.3f}, {self.matrix[4]:.3f}, {self.matrix[5]:.1f}]"
+
+    def calc_memory_size(self) -> int:
+        """计算源图像内存大小（字节）"""
+        if self.src_stride > 0 and self.src_height > 0:
+            return self.src_stride * self.src_height
+        return 0
 
 
 @dataclass
@@ -627,9 +705,12 @@ class VGLiteCommandParser:
     # 可疑的地址值（可能是空指针或未初始化）
     SUSPICIOUS_ADDRESSES = [0x00000000, 0xDEADBEEF, 0xCAFEBABE, 0xFFFFFFFF]
 
-    def __init__(self, verbose: bool = False, parse_path: bool = False):
+    def __init__(
+        self, verbose: bool = False, parse_path: bool = False, parse_image: bool = False
+    ):
         self.verbose = verbose
         self.parse_path = parse_path
+        self.parse_image = parse_image
         self.commands: List[ParsedCommand] = []
         self.abnormal_commands: List[ParsedCommand] = []
         self.current_path_format = "FP32"  # 默认路径格式
@@ -638,6 +719,47 @@ class VGLiteCommandParser:
             []
         )  # [{name, address, size, commands, abnormal_commands}]
         self.current_section: dict = None
+
+        # 图片绘制跟踪
+        self.image_draws: List[ImageDrawInfo] = []
+        self._current_image = ImageDrawInfo()
+        self._image_matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        self._current_blend = "SRC_OVER"
+
+    def _finalize_image_draw(self, offset: int):
+        """完成一次图片绘制记录"""
+        if self._current_image.src_address == 0:
+            return
+
+        # 复制当前状态
+        img = ImageDrawInfo(
+            src_address=self._current_image.src_address,
+            src_format=self._current_image.src_format,
+            src_format_raw=self._current_image.src_format_raw,
+            src_width=self._current_image.src_width,
+            src_height=self._current_image.src_height,
+            src_stride=self._current_image.src_stride,
+            dst_address=self._current_image.dst_address,
+            dst_format=self._current_image.dst_format,
+            dst_format_raw=self._current_image.dst_format_raw,
+            dst_width=self._current_image.dst_width,
+            dst_height=self._current_image.dst_height,
+            dst_stride=self._current_image.dst_stride,
+            matrix=self._image_matrix.copy(),
+            blend_mode=self._current_blend,
+            offset=offset,
+            section_name=self.current_section["name"] if self.current_section else "",
+        )
+        self.image_draws.append(img)
+
+        # 重置源地址（但保留目标信息，因为可能多次绘制到同一目标）
+        self._current_image.src_address = 0
+
+    def _reset_image_state(self):
+        """重置图片状态（新的命令段开始时调用）"""
+        self._current_image = ImageDrawInfo()
+        self._image_matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        self._current_blend = "SRC_OVER"
 
     @staticmethod
     def clean_log_line(line: str) -> str:
@@ -719,16 +841,17 @@ class VGLiteCommandParser:
                         abnormal_reasons.append(f"未知寄存器地址: 0x{address:04X}")
 
                 # 检查异常：地址寄存器写入可疑值
+                # 注意：0x0A1D, 0x0A1A, 0x0A21 等在 Blit 模式下是浮点变换参数，不是地址
+                # 只检查真正的地址寄存器
                 address_regs = [
-                    0x0A01,
-                    0x0A04,
-                    0x0A07,
-                    0x0A08,
-                    0x0A0C,
-                    0x0A1A,
-                    0x0A1D,
-                    0x0A21,
-                    0x0A46,
+                    0x0A04,  # VgImageAddress - 图像源地址
+                    0x0A07,  # VgImageUAddress - U平面地址
+                    0x0A08,  # VgImageVAddress - V平面地址
+                    0x0A0C,  # VgPatternAddress - 图案地址
+                    0x0A11,  # VgTargetWidth - 实际是目标缓冲区地址
+                    0x0A29,  # VgSourceAddress - 源图像地址 (blit)
+                    0x0A46,  # VgPaintAddress - 画笔地址
+                    0x0ACB,  # VgMaskStride - 遮罩缓冲区地址
                 ]
                 if address in address_regs:
                     if data_word in self.SUSPICIOUS_ADDRESSES:
@@ -740,11 +863,10 @@ class VGLiteCommandParser:
                     if data_word != 0 and (
                         data_word < 0x10000000 or data_word > 0x80000000
                     ):
-                        if data_word not in [0x3F800000]:  # 排除浮点数1.0
-                            is_abnormal = True
-                            abnormal_reasons.append(
-                                f"地址值可能超出有效范围: 0x{data_word:08X}"
-                            )
+                        is_abnormal = True
+                        abnormal_reasons.append(
+                            f"地址值可能超出有效范围: 0x{data_word:08X}"
+                        )
 
             else:
                 cmd_type = "STATES"
@@ -788,7 +910,15 @@ class VGLiteCommandParser:
         elif opcode == CommandType.DATA:
             cmd_type = "DATA"
             data_count = cmd_word & 0x0FFFFFFF
-            description = f"路径数据 ({data_count * 8} 字节, {data_count} 条目)"
+
+            # data_count == 1 通常是 push_rectangle 写入的矩形数据（用于 blit）
+            if data_count == 1:
+                description = f"矩形绘制数据 (Blit)"
+                # 收集图片绘制信息（如果有源图像地址）
+                if self.parse_image and self._current_image.src_address != 0:
+                    self._finalize_image_draw(offset)
+            else:
+                description = f"路径数据 ({data_count * 8} 字节, {data_count} 条目)"
 
             # 检查异常：数据量过大 (合理范围内的路径数据一般不会超过64K条目)
             if data_count > 0x10000:  # 超过64K条目
@@ -844,6 +974,8 @@ class VGLiteCommandParser:
             blend = data & 0x00000F00
             blend_name = BLEND_MODES.get(blend, f"0x{blend:04X}")
             details.append(f"混合模式: {blend_name}")
+            if self.parse_image:
+                self._current_blend = blend_name
 
             if data & 0x01:
                 details.append("启用Tiled模式")
@@ -921,30 +1053,67 @@ class VGLiteCommandParser:
 
         elif address == 0x0A01:  # VgTargetAddress
             details.append(f"目标地址: 0x{data:08X}")
+            if self.parse_image:
+                self._current_image.dst_address = data
 
-        elif address == 0x0A04:  # VgImageAddress
-            details.append(f"源地址: 0x{data:08X}")
+        elif address == 0x0A29:  # VgSourceAddress (blit源图像地址)
+            details.append(f"源图像地址: 0x{data:08X}")
+            if self.parse_image:
+                self._current_image.src_address = data
 
         elif address == 0x0A10:  # VgTargetStride
             details.append(f"目标步长: {data} 字节")
+            if self.parse_image:
+                self._current_image.dst_stride = data
 
         elif address == 0x0A11:  # VgTargetWidth
             details.append(f"目标宽度: {data}")
+            if self.parse_image:
+                self._current_image.dst_width = data
 
         elif address == 0x0A12:  # VgTargetHeight
             details.append(f"目标高度: {data}")
+            if self.parse_image:
+                self._current_image.dst_height = data
 
         elif address == 0x0A13:  # VgTargetConfig
             fmt = data & 0x3F
             fmt_name = IMAGE_FORMATS.get(fmt, f"0x{fmt:02X}")
             details.append(f"目标格式: {fmt_name}")
+            if self.parse_image:
+                self._current_image.dst_format = fmt_name
+                self._current_image.dst_format_raw = fmt
 
-        elif address == 0x0A05:  # VgImageConfig
-            fmt = data & 0xFFF
-            # 处理特殊格式
-            base_fmt = fmt & 0x3F
-            fmt_name = IMAGE_FORMATS.get(base_fmt, f"0x{fmt:03X}")
-            details.append(f"源格式: {fmt_name}")
+        elif address == 0x0A25:  # VgSourceConfig (源格式配置)
+            fmt = data & 0x3F
+            filter_mode = (data >> 16) & 0x3
+            filter_names = {0: "POINT", 1: "LINEAR", 2: "BI_LINEAR", 3: "GAUSSIAN"}
+            fmt_name = IMAGE_FORMATS.get(fmt, f"0x{fmt:02X}")
+            filter_name = filter_names.get(filter_mode, "?")
+            details.append(f"源格式: {fmt_name}, 滤波: {filter_name}")
+            if self.parse_image:
+                self._current_image.src_format = fmt_name
+                self._current_image.src_format_raw = fmt
+
+        elif address == 0x0A2B:  # VgSourceStride
+            stride = data & 0x0FFFFFFF
+            tiled = (data >> 28) & 0x1
+            details.append(f"源步长: {stride} 字节" + (", Tiled" if tiled else ""))
+            if self.parse_image:
+                self._current_image.src_stride = stride
+
+        elif address == 0x0A2D:  # VgSourceOrigin
+            x = data & 0xFFFF
+            y = (data >> 16) & 0xFFFF
+            details.append(f"源区域起点: ({x}, {y})")
+
+        elif address == 0x0A2F:  # VgSourceSize
+            w = data & 0xFFFF
+            h = (data >> 16) & 0xFFFF
+            details.append(f"源尺寸: {w} x {h}")
+            if self.parse_image:
+                self._current_image.src_width = w
+                self._current_image.src_height = h
 
         elif address == 0x0A1B:  # VgTessControl
             details.append(f"细分控制: 0x{data:08X}")
@@ -964,12 +1133,15 @@ class VGLiteCommandParser:
             except:
                 details.append(f"矩阵值: 0x{data:08X}")
 
-        elif address in range(0x0A30, 0x0A39):  # Image Matrix
+        elif address in range(0x0A30, 0x0A39):  # Image Matrix (0x0A30 - 0x0A38)
             import struct
 
             try:
                 val = struct.unpack("f", struct.pack("I", data))[0]
-                details.append(f"图像矩阵: {val}")
+                idx = address - 0x0A30
+                details.append(f"图像矩阵[{idx}]: {val}")
+                if self.parse_image:
+                    self._image_matrix[idx] = val
             except:
                 details.append(f"矩阵值: 0x{data:08X}")
 
@@ -1331,6 +1503,35 @@ def _add_command_to_table(
         for seg in cmd.path_segments:
             desc_parts.append(f"     {seg}")
 
+    # 图片绘制信息：在 DATA(1) 命令（矩形绘制）时显示当前图片信息
+    if parser.parse_image and cmd.cmd_type == "DATA":
+        data_count = cmd.cmd_word & 0x0FFFFFFF
+        if data_count == 1 and parser.image_draws:
+            # 找到对应这个偏移的图片绘制记录
+            for img in parser.image_draws:
+                if img.offset == cmd.offset:
+                    img_info = []
+                    if img.src_address:
+                        img_info.append(f"源: 0x{img.src_address:08X}")
+                    if img.src_format != "UNKNOWN":
+                        img_info.append(f"{img.src_format}")
+                    if img.src_width and img.src_height:
+                        img_info.append(f"{img.src_width}x{img.src_height}")
+                    if img.src_stride:
+                        img_info.append(f"步长:{img.src_stride}")
+                    mem = img.calc_memory_size()
+                    if mem > 0:
+                        mem_str = f"{mem // 1024}KB" if mem >= 1024 else f"{mem}B"
+                        img_info.append(f"({mem_str})")
+                    if img.blend_mode != "SRC_OVER":
+                        img_info.append(f"混合:{img.blend_mode}")
+                    matrix_str = img.get_matrix_str()
+                    if matrix_str != "Identity":
+                        img_info.append(f"变换:{matrix_str}")
+                    if img_info:
+                        desc_parts.append(f"  🖼️ {' '.join(img_info)}")
+                    break
+
     # 添加异常原因
     if cmd.is_abnormal and cmd.abnormal_reasons:
         for reason in cmd.abnormal_reasons:
@@ -1418,6 +1619,54 @@ def _print_summary_rich(parser: VGLiteCommandParser, console: Console):
                 )
 
             console.print(abnormal_table)
+
+        # 图片绘制统计
+        if parser.parse_image and parser.image_draws:
+            console.print()
+            img_table = Table(
+                title=f"🖼️ 图片绘制统计 ({len(parser.image_draws)} 次)",
+                show_header=True,
+                header_style="bold cyan",
+            )
+            img_table.add_column("指标", style="cyan")
+            img_table.add_column("值", style="green")
+
+            # 按格式统计
+            format_counts = {}
+            for img in parser.image_draws:
+                fmt = img.src_format
+                format_counts[fmt] = format_counts.get(fmt, 0) + 1
+
+            # 按混合模式统计
+            blend_counts = {}
+            for img in parser.image_draws:
+                blend_counts[img.blend_mode] = blend_counts.get(img.blend_mode, 0) + 1
+
+            # 总内存
+            total_mem = sum(img.calc_memory_size() for img in parser.image_draws)
+            mem_str = f"{total_mem // 1024}KB" if total_mem >= 1024 else f"{total_mem}B"
+
+            img_table.add_row(
+                "格式分布",
+                ", ".join(f"{k}:{v}" for k, v in sorted(format_counts.items())),
+            )
+            img_table.add_row(
+                "混合模式",
+                ", ".join(f"{k}:{v}" for k, v in sorted(blend_counts.items())),
+            )
+            img_table.add_row("图片总数据量", mem_str)
+
+            # 检测重复绘制
+            src_addr_counts = {}
+            for img in parser.image_draws:
+                src_addr_counts[img.src_address] = (
+                    src_addr_counts.get(img.src_address, 0) + 1
+                )
+            repeated = sum(1 for c in src_addr_counts.values() if c > 1)
+            if repeated > 0:
+                img_table.add_row("重复绘制", f"{repeated} 个图片被多次绘制")
+
+            console.print(img_table)
     else:
         # 兼容无段落模式
         cmd_counts = {}
@@ -1443,6 +1692,7 @@ def parse_file_v2(
     verbose: bool = False,
     parse_path: bool = False,
     check_integrity: bool = False,
+    parse_image: bool = False,
 ) -> List[ParsedCommand]:
     """从文件解析日志"""
     with open(filename, "r") as f:
@@ -1457,7 +1707,9 @@ def parse_file_v2(
         checker.analyze(lines)
         checker.print_report(console)
 
-    parser = VGLiteCommandParser(verbose=verbose, parse_path=parse_path)
+    parser = VGLiteCommandParser(
+        verbose=verbose, parse_path=parse_path, parse_image=parse_image
+    )
     commands = parser.parse_log(log_text)
 
     # 按段输出
@@ -1480,6 +1732,7 @@ def parse_file_v2(
         console.print(table)
 
     _print_summary_rich(parser, console)
+
     return commands
 
 
@@ -1857,6 +2110,7 @@ def parse_with_registers(
     verbose: bool = False,
     parse_path: bool = False,
     check_integrity: bool = False,
+    parse_image: bool = False,
 ):
     """解析日志文件，包括寄存器分析和命令缓冲区解析"""
     with open(filename, "r") as f:
@@ -1877,7 +2131,9 @@ def parse_with_registers(
     reg_analyzer.analyze(console)
 
     # 再解析命令缓冲区
-    parser = VGLiteCommandParser(verbose=verbose, parse_path=parse_path)
+    parser = VGLiteCommandParser(
+        verbose=verbose, parse_path=parse_path, parse_image=parse_image
+    )
     commands = parser.parse_log(log_text)
 
     # 按段输出
@@ -1900,6 +2156,7 @@ def parse_with_registers(
         console.print(table)
 
     _print_summary_rich(parser, console)
+
     return commands
 
 
@@ -1927,6 +2184,9 @@ def main():
 
   # 检测日志完整性问题
   python vglite_cmdbuf_parser.py -f dump.log -c
+
+  # 分析图片绘制
+  python vglite_cmdbuf_parser.py -f dump.log -I
 
   # 交互模式
   python vglite_cmdbuf_parser.py -i
@@ -1960,17 +2220,31 @@ def main():
         action="store_true",
         help="检测日志完整性问题 (并发输出导致的数据损坏)",
     )
+    arg_parser.add_argument(
+        "-I",
+        "--parse-image",
+        action="store_true",
+        help="分析图片绘制操作 (源/目标地址、格式、变换矩阵等)",
+    )
 
     args = arg_parser.parse_args()
 
     if args.file:
         if args.regs:
             parse_with_registers(
-                args.file, args.verbose, args.parse_path, args.check_integrity
+                args.file,
+                args.verbose,
+                args.parse_path,
+                args.check_integrity,
+                args.parse_image,
             )
         else:
             parse_file_v2(
-                args.file, args.verbose, args.parse_path, args.check_integrity
+                args.file,
+                args.verbose,
+                args.parse_path,
+                args.check_integrity,
+                args.parse_image,
             )
     elif args.string:
         parse_string_v2(args.string, args.verbose, args.parse_path)
