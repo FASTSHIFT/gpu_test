@@ -60,3 +60,5 @@ dkms.conf
 .built
 .depend
 Make.dep
+
+__pycache__/
