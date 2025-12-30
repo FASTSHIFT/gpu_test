@@ -1,0 +1,8 @@
+# VGLite Command Buffer Parser 依赖
+# 使用 pip install -r requirements.txt 安装
+
+# 终端美化输出
+rich>=13.0.0
+
+# ELF 文件解析 (用于 coredump 分析)
+pyelftools>=0.29
