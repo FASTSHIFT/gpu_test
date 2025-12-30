@@ -9,6 +9,7 @@ VGLite SVG/HTML 导出器
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 import html
+import hashlib
 
 
 @dataclass
@@ -22,23 +23,87 @@ class DrawCommand:
     matrix: Optional[List[float]] = None  # 变换矩阵 [m00, m01, m02, m10, m11, m12]
     path_scale: float = 1.0  # 路径缩放
     path_bias: float = 0.0  # 路径偏移
+    split_count: int = 1  # VGLite SPLIT 策略分割次数
+
+    def get_hash_key(self) -> str:
+        """生成路径的唯一哈希键，用于去重"""
+        # 基于路径数据、颜色、变换矩阵等生成哈希
+        key_parts = []
+
+        # 路径段数据
+        for seg in self.path_segments:
+            op = seg.op_name if hasattr(seg, "op_name") else seg.get("op", "")
+            coords = seg.coords if hasattr(seg, "coords") else seg.get("coords", [])
+            key_parts.append(f"{op}:{','.join(f'{c:.4f}' for c in coords)}")
+
+        # 颜色
+        key_parts.append(f"color:{self.color}")
+
+        # 变换矩阵
+        if self.matrix:
+            key_parts.append(f"matrix:{','.join(f'{m:.6f}' for m in self.matrix)}")
+
+        # path scale 和 bias
+        key_parts.append(f"scale:{self.path_scale:.6f}")
+        key_parts.append(f"bias:{self.path_bias:.6f}")
+
+        key_str = "|".join(key_parts)
+        return hashlib.md5(key_str.encode()).hexdigest()
 
 
 class SVGExporter:
     """SVG/HTML 导出器"""
 
-    def __init__(self, width: int = 466, height: int = 466):
+    def __init__(self, width: int = 466, height: int = 466, deduplicate: bool = True):
         """
         初始化导出器
 
         Args:
             width: 画布宽度
             height: 画布高度
+            deduplicate: 是否去重 VGLite SPLIT 策略产生的重复路径（默认开启）
         """
         self.width = width
         self.height = height
         self.draw_commands: List[DrawCommand] = []
         self.background_color = "#000000"  # 纯黑色背景
+        self.deduplicate = deduplicate
+
+    def _deduplicate_commands(self):
+        """
+        去重 VGLite SPLIT 策略产生的重复路径
+
+        VGLite 使用 SPLIT 策略将大型/复杂路径分割成多个 tessellation 窗口渲染，
+        这会导致相同的路径数据被发送多次。此方法识别并合并这些重复路径，
+        同时记录分割次数用于显示。
+        """
+        if not self.draw_commands:
+            return
+
+        # 使用哈希键来识别重复路径
+        seen = {}  # hash_key -> (index, count)
+        deduplicated = []
+        original_count = len(self.draw_commands)
+
+        for draw_cmd in self.draw_commands:
+            hash_key = draw_cmd.get_hash_key()
+            if hash_key in seen:
+                # 找到重复，增加计数
+                idx = seen[hash_key]
+                deduplicated[idx].split_count += 1
+            else:
+                # 新路径
+                seen[hash_key] = len(deduplicated)
+                deduplicated.append(draw_cmd)
+
+        self.draw_commands = deduplicated
+        deduplicated_count = len(deduplicated)
+
+        if original_count != deduplicated_count:
+            print(
+                f"[去重] 原始路径: {original_count}, 去重后: {deduplicated_count}, "
+                f"移除重复: {original_count - deduplicated_count}"
+            )
 
     def process_commands(self, commands: list):
         """
@@ -105,6 +170,10 @@ class SVGExporter:
                 current_draw.path_bias = current_path_bias
                 self.draw_commands.append(current_draw)
                 current_draw = DrawCommand()
+
+        # 去重处理（如果启用）
+        if self.deduplicate:
+            self._deduplicate_commands()
 
     def _color_to_rgba(self, color: int) -> Tuple[int, int, int, float]:
         """将 ARGB 颜色转换为 RGBA 元组"""
@@ -225,7 +294,14 @@ class SVGExporter:
 
             transform = self._matrix_to_svg(draw_cmd.matrix)
 
-            path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}"/>'
+            # 添加 split-count 属性用于显示 VGLite SPLIT 策略信息
+            split_attr = (
+                f'data-split-count="{draw_cmd.split_count}"'
+                if draw_cmd.split_count > 1
+                else ""
+            )
+
+            path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}" {split_attr}/>'
             paths.append(path_elem)
 
         svg = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -396,6 +472,7 @@ class SVGExporter:
                 const fillOpacity = this.getAttribute('fill-opacity');
                 const fillRule = this.getAttribute('fill-rule');
                 const transform = this.getAttribute('transform') || '无';
+                const splitCount = this.getAttribute('data-split-count');
                 
                 // 将SVG路径格式转换为 MOVE,x,y 格式
                 function formatPath(svgPath) {{
@@ -418,8 +495,16 @@ class SVGExporter:
                 }}
                 
                 const formattedD = formatPath(d);
+                
+                // 生成 split 信息（如果存在）
+                let splitInfo = '';
+                if (splitCount && parseInt(splitCount) > 1) {{
+                    splitInfo = `<span style="color: #ff9800; font-weight: bold;">⚠ VGLite SPLIT x${{splitCount}}</span><br>`;
+                }}
+                
                 document.getElementById('pathInfo').innerHTML = 
                     `<br><strong>选中路径 #${{index}}:</strong><br>` +
+                    splitInfo +
                     `颜色: ${{fill}} (透明度: ${{fillOpacity}})<br>` +
                     `填充规则: ${{fillRule}}<br>` +
                     `变换矩阵: <code>${{transform}}</code><br>` +
@@ -434,7 +519,11 @@ class SVGExporter:
 
 
 def export_commands_to_svg(
-    commands: list, filename: str, width: int = 466, height: int = 466
+    commands: list,
+    filename: str,
+    width: int = 466,
+    height: int = 466,
+    deduplicate: bool = True,
 ):
     """
     便捷函数：将命令列表导出为 SVG/HTML
@@ -444,8 +533,9 @@ def export_commands_to_svg(
         filename: 输出文件路径 (以 .svg 结尾则导出 SVG，否则导出 HTML)
         width: 画布宽度
         height: 画布高度
+        deduplicate: 是否去重 VGLite SPLIT 策略产生的重复路径（默认开启）
     """
-    exporter = SVGExporter(width=width, height=height)
+    exporter = SVGExporter(width=width, height=height, deduplicate=deduplicate)
     exporter.process_commands(commands)
 
     if filename.endswith(".svg"):

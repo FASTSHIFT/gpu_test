@@ -358,6 +358,11 @@ def main():
         default=466,
         help="SVG 画布高度 (默认: 466)",
     )
+    arg_parser.add_argument(
+        "--no-dedup",
+        action="store_true",
+        help="禁用路径去重 (VGLite SPLIT 策略会产生重复路径，默认去重)",
+    )
 
     args = arg_parser.parse_args()
 
@@ -372,7 +377,12 @@ def main():
 
         # HTML/SVG 导出
         if args.export_html and commands:
-            exporter = SVGExporter(width=args.canvas_width, height=args.canvas_height)
+            deduplicate = not args.no_dedup
+            exporter = SVGExporter(
+                width=args.canvas_width,
+                height=args.canvas_height,
+                deduplicate=deduplicate,
+            )
             exporter.process_commands(commands)
             if args.export_html.endswith(".svg"):
                 exporter.export_svg(args.export_html)
