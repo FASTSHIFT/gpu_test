@@ -39,6 +39,7 @@ try:
         print_summary,
     )
     from .coredump_parser import parse_coredump
+    from .svg_exporter import SVGExporter
 except ImportError:
     from constants import (
         REGISTER_MAP,
@@ -55,6 +56,7 @@ except ImportError:
         print_summary,
     )
     from coredump_parser import parse_coredump
+    from svg_exporter import SVGExporter
 
 
 def parse_file_v2(
@@ -63,6 +65,9 @@ def parse_file_v2(
     parse_path: bool = False,
     check_integrity: bool = False,
     parse_image: bool = False,
+    export_html: str = None,
+    canvas_width: int = 466,
+    canvas_height: int = 466,
 ) -> List[ParsedCommand]:
     """
     从文件解析日志 (v2版本，使用Rich表格输出)
@@ -333,17 +338,48 @@ def main():
         "--core",
         help="Coredump 文件路径",
     )
+    arg_parser.add_argument(
+        "--export-html",
+        "-S",
+        nargs="?",
+        const="out.html",
+        default=None,
+        help="导出 HTML 可视化文件 (默认: out.html，以 .svg 结尾则导出纯 SVG)",
+    )
+    arg_parser.add_argument(
+        "--canvas-width",
+        type=int,
+        default=466,
+        help="SVG 画布宽度 (默认: 466)",
+    )
+    arg_parser.add_argument(
+        "--canvas-height",
+        type=int,
+        default=466,
+        help="SVG 画布高度 (默认: 466)",
+    )
 
     args = arg_parser.parse_args()
 
     # Coredump 解析模式
     if args.elf and args.core:
-        parse_coredump(
+        commands = parse_coredump(
             elf_path=args.elf,
             core_path=args.core,
             verbose=args.verbose,
             parse_path=args.parse_path,
         )
+
+        # HTML/SVG 导出
+        if args.export_html and commands:
+            exporter = SVGExporter(width=args.canvas_width, height=args.canvas_height)
+            exporter.process_commands(commands)
+            if args.export_html.endswith(".svg"):
+                exporter.export_svg(args.export_html)
+            else:
+                exporter.export_html(args.export_html)
+            console = Console()
+            console.print(f"[green]已导出可视化文件: {args.export_html}[/green]")
     elif args.file:
         if args.regs:
             parse_with_registers(
@@ -360,6 +396,9 @@ def main():
                 args.parse_path,
                 args.check_integrity,
                 args.parse_image,
+                args.export_html,
+                args.canvas_width,
+                args.canvas_height,
             )
     elif args.string:
         parse_string_v2(args.string, args.verbose, args.parse_path)

@@ -341,13 +341,18 @@ class CoredumpParser:
             lines.append(f"0x{word1:08X} 0x{word2:08X}")
         return "\n".join(lines)
 
-    def analyze(self, verbose: bool = False, parse_path: bool = False):
+    def analyze(self, verbose: bool = False, parse_path: bool = False) -> list:
         """分析命令缓冲区
 
         Args:
             verbose: 详细模式
             parse_path: 解析路径数据
+
+        Returns:
+            所有解析出的命令列表 (backup + init)
         """
+        all_commands = []
+
         # 获取 backup command buffer
         physical, size, backup_data = self.get_backup_command_buffer()
 
@@ -380,6 +385,8 @@ class CoredumpParser:
             self.console.print(table)
             print_summary(parser, self.console)
 
+            all_commands.extend(commands)
+
         # 获取 init command buffer
         init_size, init_data = self.get_init_command_buffer()
 
@@ -402,6 +409,11 @@ class CoredumpParser:
 
             self.console.print(table)
             print_summary(parser, self.console)
+
+            # Init commands 不包含绘图命令，可以选择是否加入
+            # all_commands.extend(commands)
+
+        return all_commands
 
     def _resolve_uploaded_paths(self, commands: list, parser: VGLiteCommandParser):
         """解析 CALL 命令指向的上传路径数据
@@ -511,7 +523,7 @@ def parse_coredump(
     core_path: str,
     verbose: bool = False,
     parse_path: bool = False,
-):
+) -> list:
     """解析 coredump 文件中的 VGLite 命令缓冲区
 
     Args:
@@ -519,13 +531,16 @@ def parse_coredump(
         core_path: Coredump 文件路径
         verbose: 详细模式
         parse_path: 解析路径数据
+
+    Returns:
+        解析出的命令列表，如果解析失败返回空列表
     """
     parser = CoredumpParser(elf_path, core_path)
 
     if not parser.parse():
-        return
+        return []
 
-    parser.analyze(verbose=verbose, parse_path=parse_path)
+    return parser.analyze(verbose=verbose, parse_path=parse_path)
 
 
 def main():
