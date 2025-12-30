@@ -288,10 +288,17 @@ class SVGExporter:
         svg {{
             display: block;
         }}
+        svg path {{
+            cursor: pointer;
+            vector-effect: non-scaling-stroke;
+        }}
         svg path:hover {{
             stroke: red;
             stroke-width: 2;
-            cursor: pointer;
+        }}
+        svg path.selected {{
+            stroke: #00ff00;
+            stroke-width: 2;
         }}
     </style>
 </head>
@@ -366,12 +373,19 @@ class SVGExporter:
         // 路径点击事件
         document.querySelectorAll('svg path').forEach(path => {{
             path.addEventListener('click', function() {{
+                // 移除之前的选中状态
+                document.querySelectorAll('svg path.selected').forEach(p => p.classList.remove('selected'));
+                // 添加选中状态
+                this.classList.add('selected');
+                
                 const index = this.getAttribute('data-index');
                 const d = this.getAttribute('d');
                 const fill = this.getAttribute('fill');
+                const transform = this.getAttribute('transform') || '无';
                 document.getElementById('pathInfo').innerHTML = 
                     `<br><strong>选中路径 #${{index}}:</strong><br>` +
                     `颜色: ${{fill}}<br>` +
+                    `变换: ${{transform}}<br>` +
                     `路径: <code style="font-size:11px;word-break:break-all">${{d.substring(0, 200)}}${{d.length > 200 ? '...' : ''}}</code>`;
             }});
         }});
