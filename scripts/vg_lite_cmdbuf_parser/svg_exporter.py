@@ -398,6 +398,9 @@ class SVGExporter:
                 <input type="checkbox" id="showGrid" onchange="toggleGrid()"> 显示网格
             </label>
             <label>
+                <input type="checkbox" id="showCrosshair" onchange="toggleCrosshair()"> 显示光标
+            </label>
+            <label>
                 缩放: <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1" oninput="updateZoom()">
                 <span id="zoomValue">100%</span>
             </label>
@@ -411,6 +414,7 @@ class SVGExporter:
         <div class="info">
             <strong>统计信息:</strong> 共 {len(self.draw_commands)} 个绘制命令<br>
             <strong>画布尺寸:</strong> {self.width} x {self.height}<br>
+            <strong>鼠标位置:</strong> <span id="mousePos">X: -, Y: -</span><br>
             <span id="pathInfo"></span>
         </div>
     </div>
@@ -457,6 +461,71 @@ class SVGExporter:
             const bgRect = document.querySelector('svg > rect');
             if (bgRect) bgRect.setAttribute('fill', color);
         }}
+        
+        // 光标功能
+        let crosshairEnabled = false;
+        let crosshairH = null;
+        let crosshairV = null;
+        
+        function toggleCrosshair() {{
+            crosshairEnabled = document.getElementById('showCrosshair').checked;
+            if (!crosshairEnabled) {{
+                if (crosshairH) {{ crosshairH.remove(); crosshairH = null; }}
+                if (crosshairV) {{ crosshairV.remove(); crosshairV = null; }}
+            }}
+        }}
+        
+        function updateCrosshair(x, y) {{
+            const svg = document.querySelector('svg');
+            if (!crosshairEnabled) return;
+            
+            if (!crosshairH) {{
+                crosshairH = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                crosshairH.setAttribute('stroke', '#00ff00');
+                crosshairH.setAttribute('stroke-width', '1');
+                crosshairH.setAttribute('stroke-dasharray', '4,4');
+                crosshairH.style.pointerEvents = 'none';
+                svg.appendChild(crosshairH);
+            }}
+            if (!crosshairV) {{
+                crosshairV = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                crosshairV.setAttribute('stroke', '#00ff00');
+                crosshairV.setAttribute('stroke-width', '1');
+                crosshairV.setAttribute('stroke-dasharray', '4,4');
+                crosshairV.style.pointerEvents = 'none';
+                svg.appendChild(crosshairV);
+            }}
+            
+            // 水平线
+            crosshairH.setAttribute('x1', '0');
+            crosshairH.setAttribute('y1', y);
+            crosshairH.setAttribute('x2', '{self.width}');
+            crosshairH.setAttribute('y2', y);
+            
+            // 垂直线
+            crosshairV.setAttribute('x1', x);
+            crosshairV.setAttribute('y1', '0');
+            crosshairV.setAttribute('x2', x);
+            crosshairV.setAttribute('y2', '{self.height}');
+        }}
+        
+        // 鼠标位置追踪
+        const svg = document.querySelector('svg');
+        svg.addEventListener('mousemove', function(e) {{
+            const rect = svg.getBoundingClientRect();
+            const zoom = parseFloat(document.getElementById('zoom').value) || 1;
+            // 计算相对于 SVG 画布的坐标（考虑缩放）
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            document.getElementById('mousePos').textContent = `X: ${{Math.round(x)}}, Y: ${{Math.round(y)}}`;
+            updateCrosshair(x, y);
+        }});
+        
+        svg.addEventListener('mouseleave', function() {{
+            document.getElementById('mousePos').textContent = 'X: -, Y: -';
+            if (crosshairH) {{ crosshairH.remove(); crosshairH = null; }}
+            if (crosshairV) {{ crosshairV.remove(); crosshairV = null; }}
+        }});
         
         // 路径点击事件
         document.querySelectorAll('svg path').forEach(path => {{
