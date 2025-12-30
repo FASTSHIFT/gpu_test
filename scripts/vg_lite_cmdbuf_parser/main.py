@@ -38,6 +38,7 @@ try:
         add_command_to_table,
         print_summary,
     )
+    from .coredump_parser import parse_coredump
 except ImportError:
     from constants import (
         REGISTER_MAP,
@@ -53,6 +54,7 @@ except ImportError:
         add_command_to_table,
         print_summary,
     )
+    from coredump_parser import parse_coredump
 
 
 def parse_file_v2(
@@ -282,6 +284,9 @@ def main():
   # 分析图片绘制
   python main.py -f dump.log -I
 
+  # 从 coredump 解析命令缓冲区
+  python main.py --elf firmware.elf --core crash.core
+
   # 交互模式
   python main.py -i
 
@@ -320,10 +325,26 @@ def main():
         action="store_true",
         help="分析图片绘制操作 (源/目标地址、格式、变换矩阵等)",
     )
+    arg_parser.add_argument(
+        "--elf",
+        help="ELF 文件路径 (用于 coredump 解析)",
+    )
+    arg_parser.add_argument(
+        "--core",
+        help="Coredump 文件路径",
+    )
 
     args = arg_parser.parse_args()
 
-    if args.file:
+    # Coredump 解析模式
+    if args.elf and args.core:
+        parse_coredump(
+            elf_path=args.elf,
+            core_path=args.core,
+            verbose=args.verbose,
+            parse_path=args.parse_path,
+        )
+    elif args.file:
         if args.regs:
             parse_with_registers(
                 args.file,

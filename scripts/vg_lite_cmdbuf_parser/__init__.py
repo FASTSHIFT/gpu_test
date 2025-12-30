@@ -37,8 +37,9 @@ from .output import (
     add_command_to_table,
     print_summary,
 )
+from .coredump_parser import CoredumpParser, parse_coredump
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __all__ = [
     # Constants
     "CommandType",
@@ -63,8 +64,10 @@ __all__ = [
     "VGLitePathParser",
     "VGLiteCommandParser",
     "GPURegisterAnalyzer",
+    "CoredumpParser",
     # Functions
     "create_command_table",
     "add_command_to_table",
     "print_summary",
+    "parse_coredump",
 ]
