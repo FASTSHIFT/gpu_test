@@ -62,8 +62,8 @@ def add_command_to_table(
         for detail in cmd.details:
             desc_parts.append(f"  └─ {detail}")
 
-    # 添加路径段
-    if parser.parse_path and cmd.cmd_type == "DATA" and cmd.path_segments:
+    # 添加路径段 (支持 DATA 和 CALL 命令)
+    if parser.parse_path and cmd.cmd_type in ("DATA", "CALL") and cmd.path_segments:
         desc_parts.append(f"  └─ 路径 ({len(cmd.path_segments)} 段):")
         for seg in cmd.path_segments:
             desc_parts.append(f"     {seg}")

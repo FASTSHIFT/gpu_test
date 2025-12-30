@@ -33,9 +33,11 @@ except ImportError:
 try:
     from .command_parser import VGLiteCommandParser
     from .output import create_command_table, add_command_to_table, print_summary
+    from .path_parser import VGLitePathParser
 except ImportError:
     from command_parser import VGLiteCommandParser
     from output import create_command_table, add_command_to_table, print_summary
+    from path_parser import VGLitePathParser
 
 
 @dataclass
@@ -362,6 +364,9 @@ class CoredumpParser:
             parser = VGLiteCommandParser(verbose=verbose, parse_path=parse_path)
             commands = parser.parse_log(log_text)
 
+            # 处理 CALL 命令 (upload path)，尝试从 coredump 读取路径数据
+            self._resolve_uploaded_paths(commands, parser)
+
             # 输出解析结果
             table = create_command_table(
                 "最后提交的命令缓冲区",
@@ -397,6 +402,108 @@ class CoredumpParser:
 
             self.console.print(table)
             print_summary(parser, self.console)
+
+    def _resolve_uploaded_paths(self, commands: list, parser: VGLiteCommandParser):
+        """解析 CALL 命令指向的上传路径数据
+
+        Upload path 内存布局 (参考 vg_lite_upload_path 和 lv_vg_lite_path_finish_upload):
+        [0]: DATA 命令 (0x40000000 | path_data_count)
+        [1]: 0
+        [2..n-2]: 实际路径数据 (原始字节流，格式取决于 VgPathControl)
+        [n-2]: RETURN 命令 (0x70000000)
+        [n-1]: 0
+
+        路径数据格式 (参考 lv_vg_lite_path.c):
+        - S8: 操作码 1 字节，每个坐标 1 字节
+        - S16: 操作码 2 字节，每个坐标 2 字节
+        - S32: 操作码 4 字节，每个坐标 4 字节
+        - FP32: 操作码 4 字节，每个坐标 4 字节 (浮点数)
+
+        Args:
+            commands: 命令列表
+            parser: 命令解析器（用于获取当前路径格式）
+        """
+        call_count = 0
+        resolved_count = 0
+
+        # 记录每个 CALL 命令对应的路径格式
+        current_path_format = "FP32"  # 默认格式
+
+        for cmd in commands:
+            # 跟踪路径格式变化 (VgPathControl 寄存器 0x0A34)
+            if cmd.cmd_type == "STATE":
+                reg_addr = cmd.cmd_word & 0xFFFF
+                if reg_addr == 0x0A34:  # VgPathControl
+                    # 格式位在 bit 20-21 (2 位)
+                    fmt_bits = (cmd.data_word >> 20) & 0x3
+                    format_map = {0: "S8", 1: "S16", 2: "S32", 3: "FP32"}
+                    current_path_format = format_map.get(fmt_bits, "FP32")
+
+            if cmd.cmd_type != "CALL":
+                continue
+
+            call_count += 1
+
+            # CALL 命令格式: cmd_word = 0x60000000 | count, data_word = address
+            call_data_count = cmd.cmd_word & 0x0FFFFFFF
+            path_address = cmd.data_word
+            path_size = call_data_count * 8  # 每个条目 8 字节
+
+            if path_address == 0 or path_size == 0:
+                continue
+
+            # 尝试从 coredump 读取路径数据
+            path_data = self.read_memory(path_address, path_size)
+
+            if path_data is None:
+                cmd.details.append(f"[无法读取地址 0x{path_address:08X}]")
+                continue
+
+            # 验证包头: DATA 命令 (0x40000000 | count)
+            if len(path_data) < 16:  # 至少需要包头(8) + 包尾(8)
+                cmd.details.append("[数据太短]")
+                continue
+
+            header_word = struct.unpack("<I", path_data[0:4])[0]
+            header_opcode = header_word & 0xF0000000
+            if header_opcode != 0x40000000:
+                cmd.details.append(
+                    f"[包头校验失败: 期望 DATA(0x4xxxxxxx), 实际 0x{header_word:08X}]"
+                )
+                continue
+
+            # 验证包尾: RETURN 命令 (0x70000000)
+            tail_word = struct.unpack("<I", path_data[-8:-4])[0]
+            if tail_word != 0x70000000:
+                cmd.details.append(
+                    f"[包尾校验失败: 期望 RETURN(0x70000000), 实际 0x{tail_word:08X}]"
+                )
+                continue
+
+            resolved_count += 1
+
+            # 从包头获取实际路径数据的 DWORD 数
+            path_data_dword_count = header_word & 0x0FFFFFFF
+            # 实际路径数据字节数 = (path_data_dword_count * 8) 但这是向上对齐的
+            # 实际路径数据从偏移 8 开始（跳过包头），到包尾前结束
+            actual_path_bytes = path_data[8:-8]
+
+            cmd.details.append(
+                f"[Upload Path: 格式={current_path_format}, "
+                f"包头 DATA({path_data_dword_count}), 包尾 RETURN]"
+            )
+
+            # 直接将字节流传给路径解析器
+            path_parser = VGLitePathParser(current_path_format)
+            cmd.path_segments = path_parser._parse_bytes(bytearray(actual_path_bytes))
+
+            if cmd.path_segments:
+                cmd.details.append(f"[解析出 {len(cmd.path_segments)} 个路径段]")
+
+        if call_count > 0:
+            self.console.print(
+                f"[cyan]已解析 {resolved_count}/{call_count} 个上传路径 (CALL 命令)[/cyan]"
+            )
 
 
 def parse_coredump(
