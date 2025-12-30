@@ -348,6 +348,8 @@ class SVGExporter:
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: inline-block;
+            overflow: visible;
+            transition: width 0.2s, height 0.2s;
         }}
         .controls {{
             margin-bottom: 20px;
@@ -454,6 +456,13 @@ class SVGExporter:
             const svg = document.querySelector('svg');
             svg.style.transform = `scale(${{zoom}})`;
             svg.style.transformOrigin = 'top left';
+            
+            // 自适应容器尺寸 (padding: 20px 两边共 40px)
+            const container = document.getElementById('svgContainer');
+            const baseWidth = {self.width};
+            const baseHeight = {self.height};
+            container.style.width = (baseWidth * zoom) + 'px';
+            container.style.height = (baseHeight * zoom) + 'px';
         }}
         
         function updateBgColor() {{
