@@ -38,7 +38,7 @@ class SVGExporter:
         self.width = width
         self.height = height
         self.draw_commands: List[DrawCommand] = []
-        self.background_color = "#808080"  # 灰色背景，便于看到白色路径
+        self.background_color = "#000000"  # 纯黑色背景
 
     def process_commands(self, commands: list):
         """
@@ -303,11 +303,11 @@ class SVGExporter:
                 <input type="checkbox" id="showGrid" onchange="toggleGrid()"> 显示网格
             </label>
             <label>
-                缩放: <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1" onchange="updateZoom()">
+                缩放: <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1" oninput="updateZoom()">
                 <span id="zoomValue">100%</span>
             </label>
             <label>
-                背景色: <input type="color" id="bgColor" value="#FFFFFF" onchange="updateBgColor()">
+                背景色: <input type="color" id="bgColor" value="#000000" oninput="updateBgColor()">
             </label>
         </div>
         <div class="svg-container" id="svgContainer">
