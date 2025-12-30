@@ -285,6 +285,18 @@ class SVGExporter:
             background: #e8f4fc;
             border-radius: 4px;
         }}
+        .path-data {{
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }}
         svg {{
             display: block;
         }}
@@ -381,12 +393,38 @@ class SVGExporter:
                 const index = this.getAttribute('data-index');
                 const d = this.getAttribute('d');
                 const fill = this.getAttribute('fill');
+                const fillOpacity = this.getAttribute('fill-opacity');
+                const fillRule = this.getAttribute('fill-rule');
                 const transform = this.getAttribute('transform') || '无';
+                
+                // 将SVG路径格式转换为 MOVE,x,y 格式
+                function formatPath(svgPath) {{
+                    return svgPath
+                        .replace(/M\\s*([\\d.-]+)\\s+([\\d.-]+)/g, 'MOVE,$1,$2,')
+                        .replace(/L\\s*([\\d.-]+)\\s+([\\d.-]+)/g, 'LINE,$1,$2,')
+                        .replace(/Q\\s*([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)/g, 'QUAD,$1,$2,$3,$4,')
+                        .replace(/C\\s*([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)/g, 'CUBIC,$1,$2,$3,$4,$5,$6,')
+                        .replace(/Z/g, 'CLOSE,')
+                        .replace(/,\\s*/g, ',')
+                        .split(/(MOVE|LINE|QUAD|CUBIC|CLOSE),/)
+                        .filter(s => s.trim())
+                        .reduce((acc, curr, i, arr) => {{
+                            if (['MOVE', 'LINE', 'QUAD', 'CUBIC', 'CLOSE'].includes(curr)) {{
+                                acc.push(curr + ',' + (arr[i+1] || ''));
+                            }}
+                            return acc;
+                        }}, [])
+                        .join('\\n') + '\\nEND,';
+                }}
+                
+                const formattedD = formatPath(d);
                 document.getElementById('pathInfo').innerHTML = 
                     `<br><strong>选中路径 #${{index}}:</strong><br>` +
-                    `颜色: ${{fill}}<br>` +
-                    `变换: ${{transform}}<br>` +
-                    `路径: <code style="font-size:11px;word-break:break-all">${{d.substring(0, 200)}}${{d.length > 200 ? '...' : ''}}</code>`;
+                    `颜色: ${{fill}} (透明度: ${{fillOpacity}})<br>` +
+                    `填充规则: ${{fillRule}}<br>` +
+                    `变换矩阵: <code>${{transform}}</code><br>` +
+                    `路径长度: ${{d.length}} 字符<br>` +
+                    `<div class="path-data">${{formattedD}}</div>`;
             }});
         }});
     </script>
