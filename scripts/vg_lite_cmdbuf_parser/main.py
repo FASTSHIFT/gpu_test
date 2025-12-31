@@ -337,6 +337,13 @@ def main():
         help="Coredump 文件路径",
     )
     arg_parser.add_argument(
+        "--cmdbuf",
+        type=int,
+        choices=[0, 1],
+        default=None,
+        help="指定分析 s_context.command_buffer[0|1]，默认使用 backup_command_buffer",
+    )
+    arg_parser.add_argument(
         "--export-html",
         "-S",
         nargs="?",
@@ -370,11 +377,15 @@ def main():
 
     # Coredump 解析模式
     if args.elf and args.core:
+        # 确定要分析的 command buffer 索引
+        cmdbuf_index = args.cmdbuf if args.cmdbuf is not None else -1
+
         commands, target_info, context_state = parse_coredump(
             elf_path=args.elf,
             core_path=args.core,
             verbose=args.verbose,
             parse_path=parse_path,
+            cmdbuf_index=cmdbuf_index,
         )
 
         # HTML/SVG 导出

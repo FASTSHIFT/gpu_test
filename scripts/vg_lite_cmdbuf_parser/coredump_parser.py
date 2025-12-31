@@ -127,6 +127,8 @@ class CoredumpParser:
         "premultiply_dst": 0x7D0,
         "color_transform": 0x7D4,
         "path_counter": 0x7D8,
+        "command_buffer": 0x6D0,  # uint8_t*[2] 数组
+        "command_buffer_size": 0x6D8,  # uint32_t
         "command_buffer_current": 0x6E4,
         "command_offset": 0x6DC,  # uint32_t[2]
     }
@@ -389,6 +391,162 @@ class CoredumpParser:
 
         return buf_size, buf_data
 
+    def get_context_command_buffer(
+        self, index: int = 0
+    ) -> Tuple[Optional[int], Optional[int], Optional[bytes]]:
+        """获取 s_context.command_buffer[index] 的内容
+
+        s_context 中有两个 command buffer (CMDBUF_COUNT=2):
+        - command_buffer[0] 和 command_buffer[1]
+        - command_buffer_current 指示当前正在使用的索引
+        - backup_command_buffer 通常指向 command_buffer_current 指向的那个
+
+        重要: 如果 command_buffer[index] 与 backup_command_buffer_klogical 指向同一块内存,
+        则使用 backup_command_buffer_size 作为大小 (这是上次 submit 时的完整命令大小)
+
+        Args:
+            index: command buffer 索引 (0 或 1)
+
+        Returns:
+            (address, size, data) 元组
+        """
+        if index not in (0, 1):
+            self.console.print(f"[red]错误: command buffer 索引必须是 0 或 1[/red]")
+            return None, None, None
+
+        s_context_sym = self.symbols.get("s_context")
+        if not s_context_sym:
+            self.console.print("[yellow]警告: 未找到 s_context 符号[/yellow]")
+            return None, None, None
+
+        s_context_addr = s_context_sym.address
+
+        # 读取 command_buffer[index] 指针 (uint8_t*[2] 数组)
+        cmdbuf_array_addr = s_context_addr + self.CONTEXT_OFFSETS["command_buffer"]
+        cmdbuf_ptr = self.read_u32(cmdbuf_array_addr + index * 4)
+
+        # 读取 command_buffer_size (两个 buffer 共享相同大小)
+        buf_size = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["command_buffer_size"]
+        )
+
+        # 读取 command_offset[index] (已写入的数据偏移)
+        cmd_offset_addr = s_context_addr + self.CONTEXT_OFFSETS["command_offset"]
+        cmd_offset = self.read_u32(cmd_offset_addr + index * 4)
+
+        # 读取 command_buffer_current
+        cmd_buf_current = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["command_buffer_current"]
+        )
+
+        if cmdbuf_ptr is None or buf_size is None:
+            self.console.print(
+                f"[yellow]警告: 无法读取 command_buffer[{index}] 信息[/yellow]"
+            )
+            return None, None, None
+
+        current_marker = " (当前)" if cmd_buf_current == index else ""
+
+        # 检查是否与 backup_command_buffer 指向同一块内存
+        # 如果是，使用 backup_command_buffer_size 作为大小
+        backup_klogical_sym = self.symbols.get("backup_command_buffer_klogical")
+        backup_size_sym = self.symbols.get("backup_command_buffer_size")
+        use_backup_size = False
+        backup_size = 0
+
+        if backup_klogical_sym and backup_size_sym:
+            backup_klogical = self.read_u32(backup_klogical_sym.address)
+            backup_size = self.read_u32(backup_size_sym.address)
+
+            # 检查 command_buffer[index] 是否与 backup_command_buffer 指向同一区域
+            # backup_command_buffer_klogical 可能指向 buffer 内部的某个偏移
+            if backup_klogical and backup_size:
+                if cmdbuf_ptr <= backup_klogical < cmdbuf_ptr + buf_size:
+                    use_backup_size = True
+                    self.console.print(
+                        f"[cyan]检测到 command_buffer[{index}] 与 backup_command_buffer 指向同一内存区域[/cyan]"
+                    )
+
+        # 确定实际的数据大小
+        size_source = ""
+        if use_backup_size and backup_size > 0:
+            # 使用 backup_command_buffer_size (这是上次 submit 时的完整命令大小)
+            actual_size = backup_size
+            scan_for_end = False
+            size_source = " (来自 backup_command_buffer_size)"
+        elif cmd_offset and cmd_offset < buf_size:
+            # 有有效的 offset，使用它
+            actual_size = cmd_offset
+            scan_for_end = False
+            size_source = " (来自 command_offset)"
+        else:
+            # offset=0 或异常，读取整个 buffer 并扫描 END 命令
+            actual_size = buf_size
+            scan_for_end = True
+            size_source = " (扫描 END 命令)"
+
+        if actual_size == 0 or actual_size > 0x100000:  # 超过 1MB 认为异常
+            self.console.print(
+                f"[yellow]警告: buffer 大小异常 ({actual_size})[/yellow]"
+            )
+            return cmdbuf_ptr, actual_size, None
+
+        # 读取缓冲区数据
+        buf_data = self.read_memory(cmdbuf_ptr, actual_size)
+        if buf_data is None:
+            self.console.print(
+                f"[yellow]警告: 无法读取地址 0x{cmdbuf_ptr:08X} 的数据[/yellow]"
+            )
+            return cmdbuf_ptr, actual_size, None
+
+        # 如果需要扫描 END 命令来确定实际大小
+        if scan_for_end and buf_data:
+            end_offset = self._find_end_command(buf_data)
+            if end_offset > 0:
+                actual_size = end_offset + 8  # 包含 END 命令本身 (8 字节)
+                buf_data = buf_data[:actual_size]
+                self.console.print(
+                    f"[cyan]扫描到 END 命令，实际数据大小: {actual_size} bytes[/cyan]"
+                )
+
+        self.console.print(
+            Panel.fit(
+                f"command_buffer[{index}]: 0x{cmdbuf_ptr:08X}{current_marker}\n"
+                f"command_buffer_size: {buf_size} bytes\n"
+                f"command_offset[{index}]: {cmd_offset} bytes\n"
+                f"backup_command_buffer_size: {backup_size} bytes\n"
+                f"实际读取大小: {actual_size} bytes{size_source}",
+                title=f"Context Command Buffer[{index}] 信息",
+                style="blue",
+            )
+        )
+
+        return cmdbuf_ptr, actual_size, buf_data
+
+    def _find_end_command(self, data: bytes) -> int:
+        """在命令缓冲区中查找 END 命令的位置
+
+        END 命令格式: 0x00000000 0x00000000 (两个连续的 0)
+
+        Args:
+            data: 命令缓冲区数据
+
+        Returns:
+            END 命令的偏移量，未找到返回 -1
+        """
+        import struct
+
+        # 每 8 字节检查一次 (命令对齐)
+        for i in range(0, len(data) - 7, 8):
+            cmd_word = struct.unpack("<I", data[i : i + 4])[0]
+            data_word = struct.unpack("<I", data[i + 4 : i + 8])[0]
+
+            # END 命令: cmd_word = 0x00000000, data_word = 0x00000000
+            if cmd_word == 0 and data_word == 0:
+                return i
+
+        return -1
+
     def get_target_buffer_info(self) -> Optional[TargetBufferInfo]:
         """获取渲染目标缓冲区信息
 
@@ -649,13 +807,19 @@ class CoredumpParser:
         return "\n".join(lines)
 
     def analyze(
-        self, verbose: bool = False, parse_path: bool = False
+        self,
+        verbose: bool = False,
+        parse_path: bool = False,
+        cmdbuf_index: int = -1,
     ) -> Tuple[list, Optional[TargetBufferInfo], Optional[ContextStateInfo]]:
         """分析命令缓冲区
 
         Args:
             verbose: 详细模式
             parse_path: 解析路径数据
+            cmdbuf_index: 指定要分析的 command buffer 索引
+                         -1 (默认): 使用 backup_command_buffer
+                         0 或 1: 使用 s_context.command_buffer[index]
 
         Returns:
             (所有解析出的命令列表, target buffer 信息, 上下文状态信息) 元组
@@ -668,19 +832,28 @@ class CoredumpParser:
         # 获取上下文状态信息
         context_state = self.get_context_state_info()
 
-        # 获取 backup command buffer
-        physical, size, backup_data = self.get_backup_command_buffer()
+        # 根据参数选择要分析的 command buffer
+        if cmdbuf_index in (0, 1):
+            # 使用 context command buffer
+            address, size, cmdbuf_data = self.get_context_command_buffer(cmdbuf_index)
+            buffer_name = f"Context Command Buffer[{cmdbuf_index}]"
+            panel_style = "bold blue"
+        else:
+            # 默认使用 backup command buffer
+            address, size, cmdbuf_data = self.get_backup_command_buffer()
+            buffer_name = "Backup Command Buffer (最后一次提交的命令)"
+            panel_style = "bold magenta"
 
-        if backup_data:
+        if cmdbuf_data:
             self.console.print()
             self.console.print(
                 Panel.fit(
-                    "解析 Backup Command Buffer (最后一次提交的命令)",
-                    style="bold magenta",
+                    f"解析 {buffer_name}",
+                    style=panel_style,
                 )
             )
 
-            log_text = self.buffer_to_log_format(backup_data)
+            log_text = self.buffer_to_log_format(cmdbuf_data)
             parser = VGLiteCommandParser(verbose=verbose, parse_path=parse_path)
             commands = parser.parse_log(log_text)
 
@@ -689,8 +862,8 @@ class CoredumpParser:
 
             # 输出解析结果
             table = create_command_table(
-                "最后提交的命令缓冲区",
-                f"0x{physical:08X}" if physical else None,
+                buffer_name,
+                f"0x{address:08X}" if address else None,
                 f"0x{size:X}" if size else None,
             )
 
@@ -838,6 +1011,7 @@ def parse_coredump(
     core_path: str,
     verbose: bool = False,
     parse_path: bool = False,
+    cmdbuf_index: int = -1,
 ) -> Tuple[list, Optional[TargetBufferInfo], Optional[ContextStateInfo]]:
     """解析 coredump 文件中的 VGLite 命令缓冲区
 
@@ -846,6 +1020,9 @@ def parse_coredump(
         core_path: Coredump 文件路径
         verbose: 详细模式
         parse_path: 解析路径数据
+        cmdbuf_index: 指定要分析的 command buffer 索引
+                     -1 (默认): 使用 backup_command_buffer
+                     0 或 1: 使用 s_context.command_buffer[index]
 
     Returns:
         (解析出的命令列表, target buffer 信息, 上下文状态信息) 元组，如果解析失败返回 ([], None, None)
@@ -855,7 +1032,9 @@ def parse_coredump(
     if not parser.parse():
         return [], None, None
 
-    return parser.analyze(verbose=verbose, parse_path=parse_path)
+    return parser.analyze(
+        verbose=verbose, parse_path=parse_path, cmdbuf_index=cmdbuf_index
+    )
 
 
 def main():
