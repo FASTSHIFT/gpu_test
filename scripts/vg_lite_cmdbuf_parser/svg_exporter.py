@@ -443,6 +443,7 @@ class SVGExporter:
   <g id="paths">
     {chr(10).join("    " + p for p in paths)}
   </g>
+  <g id="highlightGroup"></g>
   {bbox_group}
   {scissor_rect}
 </svg>"""
@@ -632,15 +633,9 @@ class SVGExporter:
         }}
         svg path {{
             cursor: pointer;
-            vector-effect: non-scaling-stroke;
         }}
-        svg path:hover {{
-            stroke: red;
-            stroke-width: 2;
-        }}
-        svg path.selected {{
-            stroke: #00ff00;
-            stroke-width: 2;
+        #highlightGroup path {{
+            pointer-events: none;
         }}
     </style>
 </head>
@@ -880,13 +875,44 @@ class SVGExporter:
             hideTargetCrosshair();
         }});
         
+        // 高亮显示函数
+        function highlightPath(pathElement) {{
+            const highlightGroup = document.getElementById('highlightGroup');
+            // 清除之前的高亮
+            highlightGroup.innerHTML = '';
+            
+            if (!pathElement) return;
+            
+            // 复制路径并设置半透明高亮样式
+            const highlightPath = pathElement.cloneNode(true);
+            highlightPath.removeAttribute('data-index');
+            highlightPath.removeAttribute('data-hash');
+            highlightPath.removeAttribute('data-split-count');
+            highlightPath.removeAttribute('data-bbox-x');
+            highlightPath.removeAttribute('data-bbox-y');
+            highlightPath.removeAttribute('data-bbox-w');
+            highlightPath.removeAttribute('data-bbox-h');
+            highlightPath.setAttribute('fill', '#00ff00');
+            highlightPath.setAttribute('fill-opacity', '0.4');
+            highlightPath.style.pointerEvents = 'none';
+            
+            // 如果路径在 <g> 中，需要保持 clip-path
+            const parentG = pathElement.parentElement;
+            if (parentG && parentG.tagName === 'g' && parentG.getAttribute('clip-path')) {{
+                const highlightG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                highlightG.setAttribute('clip-path', parentG.getAttribute('clip-path'));
+                highlightG.appendChild(highlightPath);
+                highlightGroup.appendChild(highlightG);
+            }} else {{
+                highlightGroup.appendChild(highlightPath);
+            }}
+        }}
+        
         // 路径点击事件
         document.querySelectorAll('svg path').forEach(path => {{
             path.addEventListener('click', function() {{
-                // 移除之前的选中状态
-                document.querySelectorAll('svg path.selected').forEach(p => p.classList.remove('selected'));
-                // 添加选中状态
-                this.classList.add('selected');
+                // 高亮选中的路径
+                highlightPath(this);
                 
                 const index = this.getAttribute('data-index');
                 selectedPathIndex = parseInt(index);
