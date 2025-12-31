@@ -67,20 +67,18 @@ class DrawCommand:
 class SVGExporter:
     """SVG/HTML 导出器"""
 
-    def __init__(self, width: int = 466, height: int = 466, deduplicate: bool = True):
+    def __init__(self, width: int = 466, height: int = 466):
         """
         初始化导出器
 
         Args:
             width: 画布宽度
             height: 画布高度
-            deduplicate: 是否去重 VGLite SPLIT 策略产生的重复路径（默认开启）
         """
         self.width = width
         self.height = height
         self.draw_commands: List[DrawCommand] = []
         self.background_color = "#000000"  # 纯黑色背景
-        self.deduplicate = deduplicate
         self.target_info = None  # 渲染目标缓冲区信息
         self.context_state = None  # VGLite 上下文状态信息
 
@@ -159,59 +157,6 @@ class SVGExporter:
         except Exception as e:
             print(f"[警告] 生成目标缓冲区图像失败: {e}")
             return None
-
-    def _deduplicate_commands(self):
-        """
-        去重 VGLite SPLIT 策略产生的重复路径
-
-        VGLite 使用 SPLIT 策略将大型/复杂路径分割成多个 tessellation 窗口渲染，
-        这会导致相同的路径数据被发送多次。此方法识别并合并这些重复路径，
-        同时记录分割次数用于显示，并合并所有 tile 的 bounding box。
-        """
-        if not self.draw_commands:
-            return
-
-        # 使用哈希键来识别重复路径
-        seen = {}  # hash_key -> (index, count)
-        deduplicated = []
-        original_count = len(self.draw_commands)
-
-        for draw_cmd in self.draw_commands:
-            hash_key = draw_cmd.get_hash_key()
-            if hash_key in seen:
-                # 找到重复，增加计数并合并 bounding box
-                idx = seen[hash_key]
-                deduplicated[idx].split_count += 1
-                # 合并 bounding box (取并集)
-                if draw_cmd.bounding_box and deduplicated[idx].bounding_box:
-                    ox, oy, ow, oh = deduplicated[idx].bounding_box
-                    nx, ny, nw, nh = draw_cmd.bounding_box
-                    # 计算两个矩形的并集
-                    min_x = min(ox, nx)
-                    min_y = min(oy, ny)
-                    max_x = max(ox + ow, nx + nw)
-                    max_y = max(oy + oh, ny + nh)
-                    deduplicated[idx].bounding_box = (
-                        min_x,
-                        min_y,
-                        max_x - min_x,
-                        max_y - min_y,
-                    )
-                elif draw_cmd.bounding_box:
-                    deduplicated[idx].bounding_box = draw_cmd.bounding_box
-            else:
-                # 新路径
-                seen[hash_key] = len(deduplicated)
-                deduplicated.append(draw_cmd)
-
-        self.draw_commands = deduplicated
-        deduplicated_count = len(deduplicated)
-
-        if original_count != deduplicated_count:
-            print(
-                f"[去重] 原始路径: {original_count}, 去重后: {deduplicated_count}, "
-                f"移除重复: {original_count - deduplicated_count}"
-            )
 
     def process_commands(self, commands: list):
         """
@@ -416,16 +361,13 @@ class SVGExporter:
     def _generate_svg(self) -> str:
         """生成 SVG 内容"""
         paths = []
+        clip_paths = []  # 存储 clipPath 定义
 
-        # 统计每个 hash 出现的次数，用于标记重复路径
+        # 统计每个 hash 出现的次数，用于标记 SPLIT 分割的路径
         hash_count = {}
-        hash_first_index = {}  # 记录每个 hash 第一次出现的索引
-        for i, draw_cmd in enumerate(self.draw_commands):
+        for draw_cmd in self.draw_commands:
             h = draw_cmd.get_hash_key()
-            if h not in hash_count:
-                hash_count[h] = 0
-                hash_first_index[h] = i
-            hash_count[h] += 1
+            hash_count[h] = hash_count.get(h, 0) + 1
 
         for i, draw_cmd in enumerate(self.draw_commands):
             d = self._path_to_svg(draw_cmd)
@@ -438,23 +380,40 @@ class SVGExporter:
 
             transform = self._matrix_to_svg(draw_cmd.matrix)
 
-            # 生成 hash 用于去重
+            # 生成 hash 用于标识
             path_hash = draw_cmd.get_hash_key()[:8]  # 只取前8位
-            is_duplicate = hash_first_index.get(draw_cmd.get_hash_key(), i) != i
-            dup_attr = 'data-duplicate="true"' if is_duplicate else ""
 
             # 添加 split-count 属性用于显示 VGLite SPLIT 策略信息
             split_count = hash_count.get(draw_cmd.get_hash_key(), 1)
             split_attr = f'data-split-count="{split_count}"' if split_count > 1 else ""
 
-            # 添加 bounding box 属性
+            # 添加 bounding box 属性和 clipPath
             bbox_attr = ""
+            clip_attr = ""
             if draw_cmd.bounding_box:
                 bx, by, bw, bh = draw_cmd.bounding_box
                 bbox_attr = f'data-bbox-x="{bx}" data-bbox-y="{by}" data-bbox-w="{bw}" data-bbox-h="{bh}"'
+                # 为每个路径创建 clipPath，裁剪到其 bounding box
+                clip_id = f"clip_{i}"
+                clip_paths.append(
+                    f'<clipPath id="{clip_id}"><rect x="{bx}" y="{by}" width="{bw}" height="{bh}"/></clipPath>'
+                )
+                clip_attr = f'clip-path="url(#{clip_id})"'
 
-            path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}" data-hash="{path_hash}" {dup_attr} {split_attr} {bbox_attr}/>'
+            # 使用 <g> 元素包裹，clip-path 应用到 <g> 上，transform 应用到 path 上
+            # 这样 clip-path 在屏幕坐标系中裁剪变换后的路径
+            if clip_attr and transform:
+                # 有 transform 和 clip-path：<g clip-path><path transform/></g>
+                path_elem = f'<g {clip_attr}><path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}" data-hash="{path_hash}" {split_attr} {bbox_attr}/></g>'
+            else:
+                # 无 transform 或无 clip-path：直接在 path 上应用
+                path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} {clip_attr} data-index="{i}" data-hash="{path_hash}" {split_attr} {bbox_attr}/>'
             paths.append(path_elem)
+
+        # 生成 defs 区域（包含所有 clipPath）
+        defs_content = ""
+        if clip_paths:
+            defs_content = f'<defs>\n    {chr(10).join("    " + cp for cp in clip_paths)}\n  </defs>'
 
         # 生成 bounding box 矩形组 (每个路径一个，初始隐藏)
         bbox_rects = []
@@ -464,10 +423,6 @@ class SVGExporter:
                 bbox_rects.append(
                     f'<rect class="bbox-rect" data-path-index="{i}" x="{bx}" y="{by}" width="{bw}" height="{bh}" fill="none" stroke="#ff00ff" stroke-width="1" stroke-dasharray="3,3" style="display: none;"/>'
                 )
-        # 添加动态合并边界矩形（用于去重模式）
-        bbox_rects.append(
-            '<rect id="mergedBbox" fill="none" stroke="#ff00ff" stroke-width="2" stroke-dasharray="4,4" style="display: none;"/>'
-        )
         bbox_group = (
             f'<g id="bboxGroup">{chr(10).join(bbox_rects)}</g>' if bbox_rects else ""
         )
@@ -483,6 +438,7 @@ class SVGExporter:
 
         svg = f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="{self.width}" height="{self.height}" viewBox="0 0 {self.width} {self.height}">
+  {defs_content}
   <rect width="100%" height="100%" fill="{self.background_color}"/>
   <g id="paths">
     {chr(10).join("    " + p for p in paths)}
@@ -705,9 +661,6 @@ class SVGExporter:
                 <input type="checkbox" id="showBbox" onchange="toggleBbox()"> 显示路径边界
             </label>
             <label>
-                <input type="checkbox" id="dedup" checked onchange="toggleDedup()"> SPLIT去重
-            </label>
-            <label>
                 背景色: <input type="color" id="bgColor" value="#000000" oninput="updateBgColor()">
             </label>
             <label>
@@ -819,99 +772,22 @@ class SVGExporter:
         
         function updateSelectedBbox() {{
             const showBbox = document.getElementById('showBbox').checked;
-            const dedup = document.getElementById('dedup').checked;
             
             // 先隐藏所有 bbox
             document.querySelectorAll('.bbox-rect').forEach(rect => {{
                 rect.style.display = 'none';
             }});
-            const mergedBbox = document.getElementById('mergedBbox');
-            if (mergedBbox) mergedBbox.style.display = 'none';
             
             if (!showBbox || selectedPathIndex < 0) {{
                 return;
             }}
             
-            // 找到选中的路径元素
-            const selectedPath = document.querySelector(`svg path[data-index="${{selectedPathIndex}}"]`);
-            if (!selectedPath) return;
-            
-            const selectedHash = selectedPath.getAttribute('data-hash');
-            
-            if (dedup && selectedHash) {{
-                // 去重模式：计算所有相同 hash 路径的 bbox 并集
-                const samePaths = document.querySelectorAll(`svg path[data-hash="${{selectedHash}}"]`);
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                let hasValidBbox = false;
-                
-                samePaths.forEach(path => {{
-                    const pathIndex = path.getAttribute('data-index');
-                    const bboxRect = document.querySelector(`.bbox-rect[data-path-index="${{pathIndex}}"]`);
-                    if (bboxRect) {{
-                        const bx = parseFloat(bboxRect.getAttribute('x'));
-                        const by = parseFloat(bboxRect.getAttribute('y'));
-                        const bw = parseFloat(bboxRect.getAttribute('width'));
-                        const bh = parseFloat(bboxRect.getAttribute('height'));
-                        if (!isNaN(bx) && !isNaN(by) && !isNaN(bw) && !isNaN(bh)) {{
-                            minX = Math.min(minX, bx);
-                            minY = Math.min(minY, by);
-                            maxX = Math.max(maxX, bx + bw);
-                            maxY = Math.max(maxY, by + bh);
-                            hasValidBbox = true;
-                        }}
-                    }}
-                }});
-                
-                if (hasValidBbox && mergedBbox) {{
-                    mergedBbox.setAttribute('x', minX);
-                    mergedBbox.setAttribute('y', minY);
-                    mergedBbox.setAttribute('width', maxX - minX);
-                    mergedBbox.setAttribute('height', maxY - minY);
-                    mergedBbox.style.display = '';
-                }}
-            }} else if (!dedup && selectedHash) {{
-                // 不去重模式：显示所有相同 hash 路径的边界（各个tile）
-                const samePaths = document.querySelectorAll(`svg path[data-hash="${{selectedHash}}"]`);
-                samePaths.forEach(path => {{
-                    const pathIndex = path.getAttribute('data-index');
-                    const bboxRect = document.querySelector(`.bbox-rect[data-path-index="${{pathIndex}}"]`);
-                    if (bboxRect) {{
-                        bboxRect.style.display = '';
-                    }}
-                }});
-            }} else {{
-                // 没有 hash 或单独的路径，只显示选中路径的边界
-                const bboxRect = document.querySelector(`.bbox-rect[data-path-index="${{selectedPathIndex}}"]`);
-                if (bboxRect) {{
-                    bboxRect.style.display = '';
-                }}
+            // 显示选中路径的边界
+            const bboxRect = document.querySelector(`.bbox-rect[data-path-index="${{selectedPathIndex}}"]`);
+            if (bboxRect) {{
+                bboxRect.style.display = '';
             }}
         }}
-        
-        function toggleDedup() {{
-            const dedup = document.getElementById('dedup').checked;
-            const paths = document.querySelectorAll('svg path[data-duplicate]');
-            paths.forEach(path => {{
-                path.style.display = dedup ? 'none' : '';
-            }});
-            // 更新统计信息
-            updateStats();
-            // 更新边界显示
-            updateSelectedBbox();
-        }}
-        
-        function updateStats() {{
-            const dedup = document.getElementById('dedup').checked;
-            const allPaths = document.querySelectorAll('svg path');
-            const dupPaths = document.querySelectorAll('svg path[data-duplicate]');
-            const visibleCount = dedup ? (allPaths.length - dupPaths.length) : allPaths.length;
-            // 可以在这里更新显示的统计信息
-        }}
-        
-        // 页面加载时自动应用去重
-        document.addEventListener('DOMContentLoaded', function() {{
-            toggleDedup();
-        }});
         
         function updateCrosshair(x, y) {{
             const svg = document.querySelector('svg');
