@@ -368,7 +368,7 @@ def main():
 
     # Coredump 解析模式
     if args.elf and args.core:
-        commands, target_info = parse_coredump(
+        commands, target_info, context_state = parse_coredump(
             elf_path=args.elf,
             core_path=args.core,
             verbose=args.verbose,
@@ -394,6 +394,7 @@ def main():
                 deduplicate=deduplicate,
             )
             exporter.set_target_info(target_info)
+            exporter.set_context_state(context_state)
             exporter.process_commands(commands)
             if args.export_html.endswith(".svg"):
                 exporter.export_svg(args.export_html)

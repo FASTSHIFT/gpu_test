@@ -79,10 +79,15 @@ class SVGExporter:
         self.background_color = "#000000"  # 纯黑色背景
         self.deduplicate = deduplicate
         self.target_info = None  # 渲染目标缓冲区信息
+        self.context_state = None  # VGLite 上下文状态信息
 
     def set_target_info(self, target_info):
         """设置渲染目标缓冲区信息"""
         self.target_info = target_info
+
+    def set_context_state(self, context_state):
+        """设置 VGLite 上下文状态信息"""
+        self.context_state = context_state
 
     def _generate_target_buffer_image(self) -> Optional[str]:
         """生成目标缓冲区的 base64 编码图像
@@ -446,6 +451,61 @@ class SVGExporter:
                     </div>
                 </div>"""
 
+        # 生成上下文状态信息 HTML
+        context_state_html = ""
+        if self.context_state:
+            # 混合模式名称映射
+            blend_names = {
+                0: "NONE",
+                1: "SRC_OVER",
+                2: "DST_OVER",
+                3: "SRC_IN",
+                4: "DST_IN",
+                5: "MULTIPLY",
+                6: "SCREEN",
+                7: "DARKEN",
+                8: "LIGHTEN",
+                9: "ADDITIVE",
+                10: "SUBTRACT",
+                11: "NORMAL_LVGL",
+                12: "ADDITIVE_LVGL",
+                13: "SUBTRACT_LVGL",
+                14: "MULTIPLY_LVGL",
+                15: "PREMULTIPLY_SRC_OVER",
+            }
+            blend_name = blend_names.get(
+                self.context_state.blend_mode,
+                f"Unknown({self.context_state.blend_mode})",
+            )
+
+            # 滤波器名称映射
+            filter_names = {
+                0: "POINT",
+                0x1000: "LINEAR",
+                0x2000: "BI_LINEAR",
+                0x3000: "GAUSSIAN",
+            }
+            filter_name = filter_names.get(
+                self.context_state.filter,
+                f"Unknown(0x{self.context_state.filter:X})",
+            )
+
+            scissor_str = (
+                f"({self.context_state.scissor[0]}, {self.context_state.scissor[1]}) - "
+                f"({self.context_state.scissor[2]}, {self.context_state.scissor[3]})"
+            )
+
+            context_state_html = f"""
+            <strong>上下文状态:</strong><br>
+            &nbsp;&nbsp;• 混合模式: {blend_name}<br>
+            &nbsp;&nbsp;• 滤波器: {filter_name}<br>
+            &nbsp;&nbsp;• 裁剪: {'启用' if self.context_state.scissor_enable else '禁用'} {scissor_str if self.context_state.scissor_enable else ''}<br>
+            &nbsp;&nbsp;• Alpha模式: src={self.context_state.src_alpha_mode}, dst={self.context_state.dst_alpha_mode}<br>
+            &nbsp;&nbsp;• 预乘: src={self.context_state.premultiply_src}, dst={self.context_state.premultiply_dst}<br>
+            &nbsp;&nbsp;• 曲面细分尺寸: {self.context_state.tess_width}x{self.context_state.tess_height}<br>
+            &nbsp;&nbsp;• 颜色变换: {self.context_state.color_transform}<br>
+            &nbsp;&nbsp;• 路径计数: {self.context_state.path_counter}<br>"""
+
         html_template = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -564,7 +624,7 @@ class SVGExporter:
         </div>
         <div class="info">
             <strong>统计信息:</strong> 共 {len(self.draw_commands)} 个绘制命令<br>
-            <strong>画布尺寸:</strong> {self.width} x {self.height}<br>{target_info_html}
+            <strong>画布尺寸:</strong> {self.width} x {self.height}<br>{target_info_html}{context_state_html}
             <strong>鼠标位置:</strong> <span id="mousePos">X: -, Y: -</span><br>
             <span id="pathInfo"></span>
         </div>

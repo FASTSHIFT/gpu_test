@@ -72,6 +72,26 @@ class TargetBufferInfo:
     pixel_data: bytes = None  # 像素数据
 
 
+@dataclass
+class ContextStateInfo:
+    """VGLite 上下文状态信息"""
+
+    blend_mode: int = 0
+    scissor_enable: int = 0
+    scissor: tuple = (0, 0, 0, 0)  # x, y, right, bottom
+    src_alpha_mode: int = 0
+    dst_alpha_mode: int = 0
+    tess_width: int = 0
+    tess_height: int = 0
+    filter: int = 0
+    premultiply_src: int = 0
+    premultiply_dst: int = 0
+    color_transform: int = 0
+    path_counter: int = 0
+    command_buffer_current: int = 0
+    command_offset: tuple = (0, 0)
+
+
 class CoredumpParser:
     """Coredump 解析器
 
@@ -95,6 +115,20 @@ class CoredumpParser:
         "rtbuffer": 0x720,  # vg_lite_buffer_t* 指针
         "target_width": 0x7A4,
         "target_height": 0x7A8,
+        "blend_mode": 0x760,
+        "scissor_enable": 0x734,
+        "scissor": 0x73C,  # int32_t[4]
+        "src_alpha_mode": 0x750,
+        "dst_alpha_mode": 0x758,
+        "tess_width": 0x79C,
+        "tess_height": 0x7A0,
+        "filter": 0x7DC,
+        "premultiply_src": 0x7CC,
+        "premultiply_dst": 0x7D0,
+        "color_transform": 0x7D4,
+        "path_counter": 0x7D8,
+        "command_buffer_current": 0x6E4,
+        "command_offset": 0x6DC,  # uint32_t[2]
     }
 
     # vg_lite_buffer_t 结构体偏移量
@@ -461,6 +495,136 @@ class CoredumpParser:
 
         return info
 
+    def get_context_state_info(self) -> Optional[ContextStateInfo]:
+        """获取 VGLite 上下文状态信息
+
+        从 s_context 读取各种状态信息用于调试分析
+
+        Returns:
+            ContextStateInfo 或 None
+        """
+        s_context_sym = self.symbols.get("s_context")
+        if not s_context_sym:
+            return None
+
+        s_context_addr = s_context_sym.address
+
+        # 读取各种状态字段
+        blend_mode = self.read_u32(s_context_addr + self.CONTEXT_OFFSETS["blend_mode"])
+        scissor_enable = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["scissor_enable"]
+        )
+        src_alpha_mode = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["src_alpha_mode"]
+        )
+        dst_alpha_mode = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["dst_alpha_mode"]
+        )
+        tess_width = self.read_u32(s_context_addr + self.CONTEXT_OFFSETS["tess_width"])
+        tess_height = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["tess_height"]
+        )
+        filter_val = self.read_u32(s_context_addr + self.CONTEXT_OFFSETS["filter"])
+        premultiply_src = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["premultiply_src"]
+        )
+        premultiply_dst = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["premultiply_dst"]
+        )
+        color_transform = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["color_transform"]
+        )
+        path_counter = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["path_counter"]
+        )
+        cmd_buf_current = self.read_u32(
+            s_context_addr + self.CONTEXT_OFFSETS["command_buffer_current"]
+        )
+
+        # 读取 scissor 数组 (4个 int32)
+        scissor_addr = s_context_addr + self.CONTEXT_OFFSETS["scissor"]
+        scissor_data = self.read_memory(scissor_addr, 16)  # 4 * 4 bytes
+        scissor = (0, 0, 0, 0)
+        if scissor_data and len(scissor_data) == 16:
+            scissor = struct.unpack("<4i", scissor_data)
+
+        # 读取 command_offset 数组 (2个 uint32)
+        cmd_offset_addr = s_context_addr + self.CONTEXT_OFFSETS["command_offset"]
+        cmd_offset_data = self.read_memory(cmd_offset_addr, 8)  # 2 * 4 bytes
+        cmd_offset = (0, 0)
+        if cmd_offset_data and len(cmd_offset_data) == 8:
+            cmd_offset = struct.unpack("<2I", cmd_offset_data)
+
+        info = ContextStateInfo(
+            blend_mode=blend_mode or 0,
+            scissor_enable=scissor_enable or 0,
+            scissor=scissor,
+            src_alpha_mode=src_alpha_mode or 0,
+            dst_alpha_mode=dst_alpha_mode or 0,
+            tess_width=tess_width or 0,
+            tess_height=tess_height or 0,
+            filter=filter_val or 0,
+            premultiply_src=premultiply_src or 0,
+            premultiply_dst=premultiply_dst or 0,
+            color_transform=color_transform or 0,
+            path_counter=path_counter or 0,
+            command_buffer_current=cmd_buf_current or 0,
+            command_offset=cmd_offset,
+        )
+
+        # 混合模式名称映射
+        blend_names = {
+            0: "NONE",
+            1: "SRC_OVER",
+            2: "DST_OVER",
+            3: "SRC_IN",
+            4: "DST_IN",
+            5: "MULTIPLY",
+            6: "SCREEN",
+            7: "DARKEN",
+            8: "LIGHTEN",
+            9: "ADDITIVE",
+            10: "SUBTRACT",
+            11: "NORMAL_LVGL",
+            12: "ADDITIVE_LVGL",
+            13: "SUBTRACT_LVGL",
+            14: "MULTIPLY_LVGL",
+            15: "PREMULTIPLY_SRC_OVER",
+        }
+        blend_name = blend_names.get(blend_mode, f"Unknown({blend_mode})")
+
+        # 滤波器名称映射
+        filter_names = {
+            0: "POINT",
+            0x1000: "LINEAR",
+            0x2000: "BI_LINEAR",
+            0x3000: "GAUSSIAN",
+        }
+        filter_name = filter_names.get(filter_val, f"Unknown(0x{filter_val:X})")
+
+        self.console.print(
+            Panel.fit(
+                f"blend_mode: {blend_name}\n"
+                f"scissor_enable: {scissor_enable}\n"
+                f"scissor: ({scissor[0]}, {scissor[1]}, {scissor[2]}, {scissor[3]})\n"
+                f"src_alpha_mode: {src_alpha_mode}\n"
+                f"dst_alpha_mode: {dst_alpha_mode}\n"
+                f"tess_width: {tess_width}\n"
+                f"tess_height: {tess_height}\n"
+                f"filter: {filter_name}\n"
+                f"premultiply_src: {premultiply_src}\n"
+                f"premultiply_dst: {premultiply_dst}\n"
+                f"color_transform: {color_transform}\n"
+                f"path_counter: {path_counter}\n"
+                f"command_buffer_current: {cmd_buf_current}\n"
+                f"command_offset: ({cmd_offset[0]}, {cmd_offset[1]})",
+                title="上下文状态信息",
+                style="magenta",
+            )
+        )
+
+        return info
+
     def read_u16(self, address: int) -> Optional[int]:
         """读取 16 位无符号整数"""
         data = self.read_memory(address, 2)
@@ -486,7 +650,7 @@ class CoredumpParser:
 
     def analyze(
         self, verbose: bool = False, parse_path: bool = False
-    ) -> Tuple[list, Optional[TargetBufferInfo]]:
+    ) -> Tuple[list, Optional[TargetBufferInfo], Optional[ContextStateInfo]]:
         """分析命令缓冲区
 
         Args:
@@ -494,12 +658,15 @@ class CoredumpParser:
             parse_path: 解析路径数据
 
         Returns:
-            (所有解析出的命令列表, target buffer 信息) 元组
+            (所有解析出的命令列表, target buffer 信息, 上下文状态信息) 元组
         """
         all_commands = []
 
         # 获取 target buffer 信息
         target_info = self.get_target_buffer_info()
+
+        # 获取上下文状态信息
+        context_state = self.get_context_state_info()
 
         # 获取 backup command buffer
         physical, size, backup_data = self.get_backup_command_buffer()
@@ -561,7 +728,7 @@ class CoredumpParser:
             # Init commands 不包含绘图命令，可以选择是否加入
             # all_commands.extend(commands)
 
-        return all_commands, target_info
+        return all_commands, target_info, context_state
 
     def _resolve_uploaded_paths(self, commands: list, parser: VGLiteCommandParser):
         """解析 CALL 命令指向的上传路径数据
@@ -671,7 +838,7 @@ def parse_coredump(
     core_path: str,
     verbose: bool = False,
     parse_path: bool = False,
-) -> Tuple[list, Optional[TargetBufferInfo]]:
+) -> Tuple[list, Optional[TargetBufferInfo], Optional[ContextStateInfo]]:
     """解析 coredump 文件中的 VGLite 命令缓冲区
 
     Args:
@@ -681,12 +848,12 @@ def parse_coredump(
         parse_path: 解析路径数据
 
     Returns:
-        (解析出的命令列表, target buffer 信息) 元组，如果解析失败返回 ([], None)
+        (解析出的命令列表, target buffer 信息, 上下文状态信息) 元组，如果解析失败返回 ([], None, None)
     """
     parser = CoredumpParser(elf_path, core_path)
 
     if not parser.parse():
-        return [], None
+        return [], None, None
 
     return parser.analyze(verbose=verbose, parse_path=parse_path)
 
