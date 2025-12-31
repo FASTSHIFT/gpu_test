@@ -252,8 +252,6 @@ class SVGExporter:
                 self.draw_commands.append(current_draw)
                 current_draw = DrawCommand()
 
-        # 不再在此处去重，改为在 HTML 中动态控制
-
     def _color_to_rgba(self, color: int) -> Tuple[int, int, int, float]:
         """将 ARGB 颜色转换为 RGBA 元组"""
         a = (color >> 24) & 0xFF
@@ -987,7 +985,6 @@ def export_commands_to_svg(
     filename: str,
     width: int = 466,
     height: int = 466,
-    deduplicate: bool = True,
 ):
     """
     便捷函数：将命令列表导出为 SVG/HTML
@@ -997,9 +994,8 @@ def export_commands_to_svg(
         filename: 输出文件路径 (以 .svg 结尾则导出 SVG，否则导出 HTML)
         width: 画布宽度
         height: 画布高度
-        deduplicate: 是否去重 VGLite SPLIT 策略产生的重复路径（默认开启）
     """
-    exporter = SVGExporter(width=width, height=height, deduplicate=deduplicate)
+    exporter = SVGExporter(width=width, height=height)
     exporter.process_commands(commands)
 
     if filename.endswith(".svg"):
