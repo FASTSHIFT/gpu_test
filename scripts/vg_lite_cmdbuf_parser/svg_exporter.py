@@ -34,6 +34,9 @@ class DrawCommand:
     path_scale: float = 1.0  # 路径缩放
     path_bias: float = 0.0  # 路径偏移
     split_count: int = 1  # VGLite SPLIT 策略分割次数
+    bounding_box: Optional[Tuple[int, int, int, int]] = (
+        None  # (x, y, width, height) 路径裁剪区域
+    )
 
     def get_hash_key(self) -> str:
         """生成路径的唯一哈希键，用于去重"""
@@ -163,7 +166,7 @@ class SVGExporter:
 
         VGLite 使用 SPLIT 策略将大型/复杂路径分割成多个 tessellation 窗口渲染，
         这会导致相同的路径数据被发送多次。此方法识别并合并这些重复路径，
-        同时记录分割次数用于显示。
+        同时记录分割次数用于显示，并合并所有 tile 的 bounding box。
         """
         if not self.draw_commands:
             return
@@ -176,9 +179,26 @@ class SVGExporter:
         for draw_cmd in self.draw_commands:
             hash_key = draw_cmd.get_hash_key()
             if hash_key in seen:
-                # 找到重复，增加计数
+                # 找到重复，增加计数并合并 bounding box
                 idx = seen[hash_key]
                 deduplicated[idx].split_count += 1
+                # 合并 bounding box (取并集)
+                if draw_cmd.bounding_box and deduplicated[idx].bounding_box:
+                    ox, oy, ow, oh = deduplicated[idx].bounding_box
+                    nx, ny, nw, nh = draw_cmd.bounding_box
+                    # 计算两个矩形的并集
+                    min_x = min(ox, nx)
+                    min_y = min(oy, ny)
+                    max_x = max(ox + ow, nx + nw)
+                    max_y = max(oy + oh, ny + nh)
+                    deduplicated[idx].bounding_box = (
+                        min_x,
+                        min_y,
+                        max_x - min_x,
+                        max_y - min_y,
+                    )
+                elif draw_cmd.bounding_box:
+                    deduplicated[idx].bounding_box = draw_cmd.bounding_box
             else:
                 # 新路径
                 seen[hash_key] = len(deduplicated)
@@ -204,6 +224,10 @@ class SVGExporter:
         current_matrix = None
         current_path_scale = 1.0
         current_path_bias = 0.0
+        current_tess_x = 0
+        current_tess_y = 0
+        current_tess_w = 0
+        current_tess_h = 0
 
         for cmd in commands:
             if cmd.cmd_type == "STATE":
@@ -250,12 +274,30 @@ class SVGExporter:
                             "f", struct.pack("I", cmd.data_word)
                         )[0]
 
+                # VgTessWindow (0x0A39) - 裁剪窗口起点
+                elif reg_addr == 0x0A39:
+                    current_tess_x = cmd.data_word & 0xFFFF
+                    current_tess_y = (cmd.data_word >> 16) & 0xFFFF
+
+                # VgTessWindowSize (0x0A3A) - 裁剪窗口大小
+                elif reg_addr == 0x0A3A:
+                    current_tess_w = cmd.data_word & 0xFFFF
+                    current_tess_h = (cmd.data_word >> 16) & 0xFFFF
+
             # 处理所有带路径数据的命令 (DATA, DRAW_PATH, CALL 等)
             if cmd.path_segments:
                 current_draw.path_segments = cmd.path_segments
                 current_draw.matrix = current_matrix.copy() if current_matrix else None
                 current_draw.path_scale = current_path_scale
                 current_draw.path_bias = current_path_bias
+                # 保存当前的 bounding box
+                if current_tess_w > 0 and current_tess_h > 0:
+                    current_draw.bounding_box = (
+                        current_tess_x,
+                        current_tess_y,
+                        current_tess_w,
+                        current_tess_h,
+                    )
                 self.draw_commands.append(current_draw)
                 current_draw = DrawCommand()
 
@@ -389,8 +431,26 @@ class SVGExporter:
                 else ""
             )
 
-            path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}" {split_attr}/>'
+            # 添加 bounding box 属性
+            bbox_attr = ""
+            if draw_cmd.bounding_box:
+                bx, by, bw, bh = draw_cmd.bounding_box
+                bbox_attr = f'data-bbox-x="{bx}" data-bbox-y="{by}" data-bbox-w="{bw}" data-bbox-h="{bh}"'
+
+            path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}" {split_attr} {bbox_attr}/>'
             paths.append(path_elem)
+
+        # 生成 bounding box 矩形组 (初始隐藏)
+        bbox_rects = []
+        for i, draw_cmd in enumerate(self.draw_commands):
+            if draw_cmd.bounding_box:
+                bx, by, bw, bh = draw_cmd.bounding_box
+                bbox_rects.append(
+                    f'<rect class="bbox-rect" data-path-index="{i}" x="{bx}" y="{by}" width="{bw}" height="{bh}" fill="none" stroke="#ff00ff" stroke-width="1" stroke-dasharray="3,3" style="display: none;"/>'
+                )
+        bbox_group = (
+            f'<g id="bboxGroup">{chr(10).join(bbox_rects)}</g>' if bbox_rects else ""
+        )
 
         # 生成 scissor 矩形
         scissor_rect = ""
@@ -407,6 +467,7 @@ class SVGExporter:
   <g id="paths">
     {chr(10).join("    " + p for p in paths)}
   </g>
+  {bbox_group}
   {scissor_rect}
 </svg>"""
         return svg
@@ -619,6 +680,9 @@ class SVGExporter:
                 <input type="checkbox" id="showScissor" onchange="toggleScissor()"> 显示裁剪区域
             </label>
             <label>
+                <input type="checkbox" id="showBbox" onchange="toggleBbox()"> 显示路径边界
+            </label>
+            <label>
                 背景色: <input type="color" id="bgColor" value="#000000" oninput="updateBgColor()">
             </label>
             <label>
@@ -716,6 +780,14 @@ class SVGExporter:
             }}
         }}
         
+        function toggleBbox() {{
+            const showBbox = document.getElementById('showBbox').checked;
+            const bboxRects = document.querySelectorAll('.bbox-rect');
+            bboxRects.forEach(rect => {{
+                rect.style.display = showBbox ? '' : 'none';
+            }});
+        }}
+        
         function updateCrosshair(x, y) {{
             const svg = document.querySelector('svg');
             if (!crosshairEnabled) return;
@@ -782,6 +854,10 @@ class SVGExporter:
                 const fillRule = this.getAttribute('fill-rule');
                 const transform = this.getAttribute('transform') || '无';
                 const splitCount = this.getAttribute('data-split-count');
+                const bboxX = this.getAttribute('data-bbox-x');
+                const bboxY = this.getAttribute('data-bbox-y');
+                const bboxW = this.getAttribute('data-bbox-w');
+                const bboxH = this.getAttribute('data-bbox-h');
                 
                 // 将SVG路径格式转换为 MOVE,x,y 格式
                 function formatPath(svgPath) {{
@@ -811,11 +887,18 @@ class SVGExporter:
                     splitInfo = `<span style="color: #ff9800; font-weight: bold;">⚠ VGLite SPLIT x${{splitCount}}</span><br>`;
                 }}
                 
+                // 生成 bounding box 信息
+                let bboxInfo = '';
+                if (bboxX && bboxY && bboxW && bboxH) {{
+                    bboxInfo = `路径边界: (${{bboxX}}, ${{bboxY}}) - ${{bboxW}}x${{bboxH}}<br>`;
+                }}
+                
                 document.getElementById('pathInfo').innerHTML = 
                     `<br><strong>选中路径 #${{index}}:</strong><br>` +
                     splitInfo +
                     `颜色: ${{fill}} (透明度: ${{fillOpacity}})<br>` +
                     `填充规则: ${{fillRule}}<br>` +
+                    bboxInfo +
                     `变换矩阵: <code>${{transform}}</code><br>` +
                     `路径长度: ${{d.length}} 字符<br>` +
                     `<div class="path-data">${{formattedD}}</div>`;
