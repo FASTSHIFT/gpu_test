@@ -537,8 +537,10 @@ class SVGExporter:
                 target_buffer_image_html = f"""
                 <div class="canvas-panel">
                     <h3>目标缓冲区</h3>
-                    <div class="image-container">
-                        <img src="{image_data}" alt="Target Buffer" style="max-width: 100%; border: 1px solid #666;">
+                    <div class="image-container" id="targetBufferContainer" style="position: relative; display: inline-block;">
+                        <img id="targetBufferImg" src="{image_data}" alt="Target Buffer" style="max-width: 100%; border: 1px solid #666; display: block;">
+                        <div id="targetCrosshairH" style="position: absolute; left: 0; width: 100%; height: 1px; background: #00ff00; pointer-events: none; display: none;"></div>
+                        <div id="targetCrosshairV" style="position: absolute; top: 0; width: 1px; height: 100%; background: #00ff00; pointer-events: none; display: none;"></div>
                     </div>
                 </div>"""
 
@@ -792,6 +794,11 @@ class SVGExporter:
             if (!crosshairEnabled) {{
                 if (crosshairH) {{ crosshairH.remove(); crosshairH = null; }}
                 if (crosshairV) {{ crosshairV.remove(); crosshairV = null; }}
+                // 同时隐藏目标缓冲区的光标
+                const targetH = document.getElementById('targetCrosshairH');
+                const targetV = document.getElementById('targetCrosshairV');
+                if (targetH) targetH.style.display = 'none';
+                if (targetV) targetV.style.display = 'none';
             }}
         }}
         
@@ -938,6 +945,45 @@ class SVGExporter:
             crosshairV.setAttribute('y1', '0');
             crosshairV.setAttribute('x2', x);
             crosshairV.setAttribute('y2', '{self.height}');
+            
+            // 同步更新目标缓冲区的光标
+            updateTargetCrosshair(x, y);
+        }}
+        
+        function updateTargetCrosshair(x, y) {{
+            const targetContainer = document.getElementById('targetBufferContainer');
+            const targetImg = document.getElementById('targetBufferImg');
+            const targetH = document.getElementById('targetCrosshairH');
+            const targetV = document.getElementById('targetCrosshairV');
+            
+            if (!targetContainer || !targetImg || !targetH || !targetV) return;
+            if (!crosshairEnabled) {{
+                targetH.style.display = 'none';
+                targetV.style.display = 'none';
+                return;
+            }}
+            
+            // 计算目标图像的缩放比例
+            const imgRect = targetImg.getBoundingClientRect();
+            const scaleX = imgRect.width / {self.width};
+            const scaleY = imgRect.height / {self.height};
+            
+            // 计算目标图像上的光标位置
+            const targetX = x * scaleX;
+            const targetY = y * scaleY;
+            
+            targetH.style.display = '';
+            targetH.style.top = targetY + 'px';
+            
+            targetV.style.display = '';
+            targetV.style.left = targetX + 'px';
+        }}
+        
+        function hideTargetCrosshair() {{
+            const targetH = document.getElementById('targetCrosshairH');
+            const targetV = document.getElementById('targetCrosshairV');
+            if (targetH) targetH.style.display = 'none';
+            if (targetV) targetV.style.display = 'none';
         }}
         
         // 鼠标位置追踪
@@ -955,6 +1001,7 @@ class SVGExporter:
             document.getElementById('mousePos').textContent = 'X: -, Y: -';
             if (crosshairH) {{ crosshairH.remove(); crosshairH = null; }}
             if (crosshairV) {{ crosshairV.remove(); crosshairV = null; }}
+            hideTargetCrosshair();
         }});
         
         // 路径点击事件
