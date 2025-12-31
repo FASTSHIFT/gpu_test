@@ -6,13 +6,13 @@ VGLite 命令缓冲区解析器
 解析 VGLite GPU 命令缓冲区数据
 
 用法:
-  python main.py -f dump.log         # 解析日志文件
-  python main.py -f dump.log -r      # 包含寄存器分析
-  python main.py -f dump.log -v      # 详细模式
-  python main.py -f dump.log -p      # 解析路径数据
-  python main.py -f dump.log -I      # 分析图片绘制
-  python main.py -f dump.log -c      # 检测日志完整性
-  python main.py -i                  # 交互模式
+  python main.py -f dump.log              # 解析日志文件 (默认解析路径和图片)
+  python main.py -f dump.log -r           # 包含寄存器分析
+  python main.py -f dump.log -v           # 详细模式
+  python main.py -f dump.log --no-parse-path   # 禁用路径解析
+  python main.py -f dump.log --no-parse-image  # 禁用图片分析
+  python main.py -f dump.log -c           # 检测日志完整性
+  python main.py -i                       # 交互模式
 """
 
 import argparse
@@ -307,10 +307,9 @@ def main():
     )
     arg_parser.add_argument("-v", "--verbose", action="store_true", help="详细输出模式")
     arg_parser.add_argument(
-        "-p",
-        "--parse-path",
+        "--no-parse-path",
         action="store_true",
-        help="解析路径数据详情 (显示MOVE/LINE/CUBIC等指令)",
+        help="禁用路径数据解析 (默认开启)",
     )
     arg_parser.add_argument(
         "-r",
@@ -325,10 +324,9 @@ def main():
         help="检测日志完整性问题 (并发输出导致的数据损坏)",
     )
     arg_parser.add_argument(
-        "-I",
-        "--parse-image",
+        "--no-parse-image",
         action="store_true",
-        help="分析图片绘制操作 (源/目标地址、格式、变换矩阵等)",
+        help="禁用图片绘制分析 (默认开启)",
     )
     arg_parser.add_argument(
         "--elf",
@@ -366,13 +364,17 @@ def main():
 
     args = arg_parser.parse_args()
 
+    # 处理默认开启的选项
+    parse_path = not args.no_parse_path
+    parse_image = not args.no_parse_image
+
     # Coredump 解析模式
     if args.elf and args.core:
         commands, target_info, context_state = parse_coredump(
             elf_path=args.elf,
             core_path=args.core,
             verbose=args.verbose,
-            parse_path=args.parse_path,
+            parse_path=parse_path,
         )
 
         # HTML/SVG 导出
@@ -407,28 +409,28 @@ def main():
             parse_with_registers(
                 args.file,
                 args.verbose,
-                args.parse_path,
+                parse_path,
                 args.check_integrity,
-                args.parse_image,
+                parse_image,
             )
         else:
             parse_file_v2(
                 args.file,
                 args.verbose,
-                args.parse_path,
+                parse_path,
                 args.check_integrity,
-                args.parse_image,
+                parse_image,
                 args.export_html,
                 args.canvas_width,
                 args.canvas_height,
             )
     elif args.string:
-        parse_string_v2(args.string, args.verbose, args.parse_path)
+        parse_string_v2(args.string, args.verbose, parse_path)
     elif args.interactive:
-        interactive_mode(args.verbose, args.parse_path)
+        interactive_mode(args.verbose, parse_path)
     else:
         # 默认交互模式
-        interactive_mode(args.verbose, args.parse_path)
+        interactive_mode(args.verbose, parse_path)
 
 
 if __name__ == "__main__":
