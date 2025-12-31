@@ -59,6 +59,19 @@ class CoreSegment:
     offset: int  # 文件偏移
 
 
+@dataclass
+class TargetBufferInfo:
+    """渲染目标缓冲区信息"""
+
+    width: int = 0
+    height: int = 0
+    stride: int = 0
+    format: int = 0
+    address: int = 0  # GPU 地址
+    memory: int = 0  # CPU 逻辑地址
+    pixel_data: bytes = None  # 像素数据
+
+
 class CoredumpParser:
     """Coredump 解析器
 
@@ -76,6 +89,23 @@ class CoredumpParser:
         # 也搜索 command buffer 相关符号
         "s_context",
     ]
+
+    # vg_lite_context_t 结构体偏移量 (通过 GDB 获取)
+    CONTEXT_OFFSETS = {
+        "rtbuffer": 0x720,  # vg_lite_buffer_t* 指针
+        "target_width": 0x7A4,
+        "target_height": 0x7A8,
+    }
+
+    # vg_lite_buffer_t 结构体偏移量
+    BUFFER_OFFSETS = {
+        "width": 0x0,
+        "height": 0x4,
+        "stride": 0x8,
+        "format": 0xE,
+        "memory": 0x14,
+        "address": 0x18,
+    }
 
     def __init__(self, elf_path: str, core_path: str):
         """
@@ -325,6 +355,119 @@ class CoredumpParser:
 
         return buf_size, buf_data
 
+    def get_target_buffer_info(self) -> Optional[TargetBufferInfo]:
+        """获取渲染目标缓冲区信息
+
+        从 s_context.rtbuffer 读取 target buffer 信息
+
+        Returns:
+            TargetBufferInfo 或 None
+        """
+        s_context_sym = self.symbols.get("s_context")
+        if not s_context_sym:
+            self.console.print("[yellow]警告: 未找到 s_context 符号[/yellow]")
+            return None
+
+        s_context_addr = s_context_sym.address
+
+        # 读取 rtbuffer 指针
+        rtbuffer_ptr = self.read_u32(s_context_addr + self.CONTEXT_OFFSETS["rtbuffer"])
+        if rtbuffer_ptr is None or rtbuffer_ptr == 0:
+            # 尝试从 target_width/target_height 获取
+            target_width = self.read_u32(
+                s_context_addr + self.CONTEXT_OFFSETS["target_width"]
+            )
+            target_height = self.read_u32(
+                s_context_addr + self.CONTEXT_OFFSETS["target_height"]
+            )
+            if target_width and target_height:
+                info = TargetBufferInfo(width=target_width, height=target_height)
+                self.console.print(
+                    Panel.fit(
+                        f"target_width: {target_width}\n"
+                        f"target_height: {target_height}\n"
+                        f"(rtbuffer 指针为空，仅从 context 获取尺寸)",
+                        title="Target Buffer 信息",
+                        style="yellow",
+                    )
+                )
+                return info
+            return None
+
+        # 读取 vg_lite_buffer_t 结构
+        width = self.read_u32(rtbuffer_ptr + self.BUFFER_OFFSETS["width"])
+        height = self.read_u32(rtbuffer_ptr + self.BUFFER_OFFSETS["height"])
+        stride = self.read_u32(rtbuffer_ptr + self.BUFFER_OFFSETS["stride"])
+        fmt = self.read_u16(rtbuffer_ptr + self.BUFFER_OFFSETS["format"])
+        memory = self.read_u32(rtbuffer_ptr + self.BUFFER_OFFSETS["memory"])
+        address = self.read_u32(rtbuffer_ptr + self.BUFFER_OFFSETS["address"])
+
+        if width is None or height is None:
+            self.console.print(
+                f"[yellow]警告: 无法读取 rtbuffer (0x{rtbuffer_ptr:08X}) 数据[/yellow]"
+            )
+            return None
+
+        info = TargetBufferInfo(
+            width=width or 0,
+            height=height or 0,
+            stride=stride or 0,
+            format=fmt or 0,
+            address=address or 0,
+            memory=memory or 0,
+        )
+
+        # 尝试读取像素数据
+        if memory and width and height and stride:
+            pixel_size = height * stride
+            pixel_data = self.read_memory(memory, pixel_size)
+            if pixel_data:
+                info.pixel_data = pixel_data
+                self.console.print(
+                    f"[green]已读取目标缓冲区像素数据: {len(pixel_data)} 字节[/green]"
+                )
+
+        # 格式名称映射 (VGLite 格式: base | (1 << 10))
+        base_fmt = fmt & 0x3FF
+        format_names = {
+            0: "RGBA8888",
+            1: "BGRA8888",
+            2: "RGBX8888",
+            3: "BGRX8888",
+            4: "RGB565",
+            5: "BGR565",
+            6: "RGBA4444",
+            7: "BGRA4444",
+            10: "A8",
+            11: "L8",
+            31: "ABGR8888",
+            32: "ARGB8888",
+        }
+        fmt_name = format_names.get(base_fmt, f"Unknown({fmt})")
+
+        self.console.print(
+            Panel.fit(
+                f"rtbuffer: 0x{rtbuffer_ptr:08X}\n"
+                f"width: {width}\n"
+                f"height: {height}\n"
+                f"stride: {stride}\n"
+                f"format: {fmt_name}\n"
+                f"address (GPU): 0x{address:08X}\n"
+                f"memory (CPU): 0x{memory:08X}",
+                title="目标缓冲区信息",
+                style="blue",
+            )
+        )
+
+        return info
+
+    def read_u16(self, address: int) -> Optional[int]:
+        """读取 16 位无符号整数"""
+        data = self.read_memory(address, 2)
+        if data and len(data) >= 2:
+            return struct.unpack("<H", data[:2])[0]
+        return None
+
     def buffer_to_log_format(self, data: bytes) -> str:
         """将缓冲区数据转换为日志格式
 
@@ -341,7 +484,9 @@ class CoredumpParser:
             lines.append(f"0x{word1:08X} 0x{word2:08X}")
         return "\n".join(lines)
 
-    def analyze(self, verbose: bool = False, parse_path: bool = False) -> list:
+    def analyze(
+        self, verbose: bool = False, parse_path: bool = False
+    ) -> Tuple[list, Optional[TargetBufferInfo]]:
         """分析命令缓冲区
 
         Args:
@@ -349,9 +494,12 @@ class CoredumpParser:
             parse_path: 解析路径数据
 
         Returns:
-            所有解析出的命令列表 (backup + init)
+            (所有解析出的命令列表, target buffer 信息) 元组
         """
         all_commands = []
+
+        # 获取 target buffer 信息
+        target_info = self.get_target_buffer_info()
 
         # 获取 backup command buffer
         physical, size, backup_data = self.get_backup_command_buffer()
@@ -413,7 +561,7 @@ class CoredumpParser:
             # Init commands 不包含绘图命令，可以选择是否加入
             # all_commands.extend(commands)
 
-        return all_commands
+        return all_commands, target_info
 
     def _resolve_uploaded_paths(self, commands: list, parser: VGLiteCommandParser):
         """解析 CALL 命令指向的上传路径数据
@@ -523,7 +671,7 @@ def parse_coredump(
     core_path: str,
     verbose: bool = False,
     parse_path: bool = False,
-) -> list:
+) -> Tuple[list, Optional[TargetBufferInfo]]:
     """解析 coredump 文件中的 VGLite 命令缓冲区
 
     Args:
@@ -533,12 +681,12 @@ def parse_coredump(
         parse_path: 解析路径数据
 
     Returns:
-        解析出的命令列表，如果解析失败返回空列表
+        (解析出的命令列表, target buffer 信息) 元组，如果解析失败返回 ([], None)
     """
     parser = CoredumpParser(elf_path, core_path)
 
     if not parser.parse():
-        return []
+        return [], None
 
     return parser.analyze(verbose=verbose, parse_path=parse_path)
 

@@ -10,6 +10,16 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 import html
 import hashlib
+import base64
+import io
+
+# 尝试导入 PIL，用于生成目标缓冲区图像
+try:
+    from PIL import Image
+
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 
 @dataclass
@@ -68,6 +78,79 @@ class SVGExporter:
         self.draw_commands: List[DrawCommand] = []
         self.background_color = "#000000"  # 纯黑色背景
         self.deduplicate = deduplicate
+        self.target_info = None  # 渲染目标缓冲区信息
+
+    def set_target_info(self, target_info):
+        """设置渲染目标缓冲区信息"""
+        self.target_info = target_info
+
+    def _generate_target_buffer_image(self) -> Optional[str]:
+        """生成目标缓冲区的 base64 编码图像
+
+        Returns:
+            base64 编码的 PNG 图像数据 URL，或 None
+        """
+        if not HAS_PIL:
+            return None
+
+        if not self.target_info or not self.target_info.pixel_data:
+            return None
+
+        width = self.target_info.width
+        height = self.target_info.height
+        stride = self.target_info.stride
+        fmt = self.target_info.format & 0x3FF  # 去掉标志位
+        data = self.target_info.pixel_data
+
+        try:
+            # 创建图像
+            img = Image.new("RGBA", (width, height))
+            pixels = img.load()
+
+            for y in range(height):
+                row_offset = y * stride
+                for x in range(width):
+                    if fmt == 3:  # BGRX8888
+                        pixel_offset = row_offset + x * 4
+                        if pixel_offset + 4 <= len(data):
+                            b = data[pixel_offset]
+                            g = data[pixel_offset + 1]
+                            r = data[pixel_offset + 2]
+                            # X (忽略)
+                            pixels[x, y] = (r, g, b, 255)
+                    elif fmt == 1:  # BGRA8888
+                        pixel_offset = row_offset + x * 4
+                        if pixel_offset + 4 <= len(data):
+                            b = data[pixel_offset]
+                            g = data[pixel_offset + 1]
+                            r = data[pixel_offset + 2]
+                            a = data[pixel_offset + 3]
+                            pixels[x, y] = (r, g, b, a)
+                    elif fmt == 0:  # RGBA8888
+                        pixel_offset = row_offset + x * 4
+                        if pixel_offset + 4 <= len(data):
+                            r = data[pixel_offset]
+                            g = data[pixel_offset + 1]
+                            b = data[pixel_offset + 2]
+                            a = data[pixel_offset + 3]
+                            pixels[x, y] = (r, g, b, a)
+                    elif fmt == 2:  # RGBX8888
+                        pixel_offset = row_offset + x * 4
+                        if pixel_offset + 4 <= len(data):
+                            r = data[pixel_offset]
+                            g = data[pixel_offset + 1]
+                            b = data[pixel_offset + 2]
+                            pixels[x, y] = (r, g, b, 255)
+
+            # 转换为 base64
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            img_base64 = base64.b64encode(buffer.getvalue()).decode()
+            return f"data:image/png;base64,{img_base64}"
+
+        except Exception as e:
+            print(f"[警告] 生成目标缓冲区图像失败: {e}")
+            return None
 
     def _deduplicate_commands(self):
         """
@@ -320,6 +403,49 @@ class SVGExporter:
             '<?xml version="1.0" encoding="UTF-8"?>\n', ""
         )
 
+        # 生成 target buffer 信息 HTML
+        target_info_html = ""
+        target_buffer_image_html = ""
+        if self.target_info:
+            # VGLite 格式: base_value | (1 << 10)
+            # 提取 base 值
+            fmt = self.target_info.format
+            base_fmt = fmt & 0x3FF  # 去掉 1<<10 标志位
+            format_names = {
+                0: "RGBA8888",
+                1: "BGRA8888",
+                2: "RGBX8888",
+                3: "BGRX8888",
+                4: "RGB565",
+                5: "BGR565",
+                6: "RGBA4444",
+                7: "BGRA4444",
+                8: "BGRA5551",
+                9: "A4",
+                10: "A8",
+                11: "L8",
+                25: "RGBA2222",
+                26: "BGRA2222",
+                31: "ABGR8888",
+                32: "ARGB8888",
+                36: "XBGR8888",
+                37: "XRGB8888",
+            }
+            fmt_name = format_names.get(base_fmt, f"Unknown({fmt})")
+            target_info_html = f"""
+            <strong>目标缓冲区:</strong> {self.target_info.width}x{self.target_info.height}, {fmt_name}, stride={self.target_info.stride}<br>"""
+
+            # 生成目标缓冲区图像
+            image_data = self._generate_target_buffer_image()
+            if image_data:
+                target_buffer_image_html = f"""
+                <div class="canvas-panel">
+                    <h3>目标缓冲区</h3>
+                    <div class="image-container">
+                        <img src="{image_data}" alt="Target Buffer" style="max-width: 100%; border: 1px solid #666;">
+                    </div>
+                </div>"""
+
         html_template = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -334,22 +460,39 @@ class SVGExporter:
             background: #f5f5f5;
         }}
         .container {{
-            max-width: 1200px;
+            max-width: 2000px;
             margin: 0 auto;
         }}
         h1 {{
             color: #333;
             margin-bottom: 20px;
         }}
-        .svg-container {{
+        .canvas-row {{
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }}
+        .canvas-panel {{
             background: white;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        .canvas-panel h3 {{
+            margin: 0 0 15px 0;
+            color: #555;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }}
+        .svg-container {{
             display: inline-block;
             overflow: visible;
-            transition: width 0.2s, height 0.2s;
+        }}
+        .image-container {{
+            display: inline-block;
         }}
         .controls {{
             margin-bottom: 20px;
@@ -403,23 +546,25 @@ class SVGExporter:
                 <input type="checkbox" id="showCrosshair" onchange="toggleCrosshair()"> 显示光标
             </label>
             <label>
-                缩放: <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1" oninput="updateZoom()">
-                <span id="zoomValue">100%</span>
-            </label>
-            <label>
                 背景色: <input type="color" id="bgColor" value="#000000" oninput="updateBgColor()">
             </label>
             <label>
-                渲染步骤: <input type="range" id="drawOrder" min="0" max="{len(self.draw_commands)}" step="1" value="{len(self.draw_commands)}" oninput="updateDrawOrder()" style="width: 120px;">
+                渲染进度: <input type="range" id="drawOrder" min="0" max="{len(self.draw_commands)}" step="1" value="{len(self.draw_commands)}" oninput="updateDrawOrder()" style="width: 120px;">
                 <span id="drawOrderValue">{len(self.draw_commands)}/{len(self.draw_commands)}</span>
             </label>
         </div>
-        <div class="svg-container" id="svgContainer">
-            {svg_content}
+        <div class="canvas-row">
+            <div class="canvas-panel">
+                <h3>渲染命令重放</h3>
+                <div class="svg-container" id="svgContainer">
+                    {svg_content}
+                </div>
+            </div>
+            {target_buffer_image_html}
         </div>
         <div class="info">
             <strong>统计信息:</strong> 共 {len(self.draw_commands)} 个绘制命令<br>
-            <strong>画布尺寸:</strong> {self.width} x {self.height}<br>
+            <strong>画布尺寸:</strong> {self.width} x {self.height}<br>{target_info_html}
             <strong>鼠标位置:</strong> <span id="mousePos">X: -, Y: -</span><br>
             <span id="pathInfo"></span>
         </div>
@@ -454,28 +599,13 @@ class SVGExporter:
             }}
         }}
         
-        function updateZoom() {{
-            const zoom = document.getElementById('zoom').value;
-            document.getElementById('zoomValue').textContent = Math.round(zoom * 100) + '%';
-            const svg = document.querySelector('svg');
-            svg.style.transform = `scale(${{zoom}})`;
-            svg.style.transformOrigin = 'top left';
-            
-            // 自适应容器尺寸 (padding: 20px 两边共 40px)
-            const container = document.getElementById('svgContainer');
-            const baseWidth = {self.width};
-            const baseHeight = {self.height};
-            container.style.width = (baseWidth * zoom) + 'px';
-            container.style.height = (baseHeight * zoom) + 'px';
-        }}
-        
         function updateBgColor() {{
             const color = document.getElementById('bgColor').value;
             const bgRect = document.querySelector('svg > rect');
             if (bgRect) bgRect.setAttribute('fill', color);
         }}
         
-        // 渲染步骤控制
+        // 渲染进度控制
         function updateDrawOrder() {{
             const value = parseInt(document.getElementById('drawOrder').value);
             const total = {len(self.draw_commands)};
@@ -543,10 +673,9 @@ class SVGExporter:
         const svg = document.querySelector('svg');
         svg.addEventListener('mousemove', function(e) {{
             const rect = svg.getBoundingClientRect();
-            const zoom = parseFloat(document.getElementById('zoom').value) || 1;
-            // 计算相对于 SVG 画布的坐标（考虑缩放）
-            const x = (e.clientX - rect.left) / zoom;
-            const y = (e.clientY - rect.top) / zoom;
+            // 计算相对于 SVG 画布的坐标
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             document.getElementById('mousePos').textContent = `X: ${{Math.round(x)}}, Y: ${{Math.round(y)}}`;
             updateCrosshair(x, y);
         }});

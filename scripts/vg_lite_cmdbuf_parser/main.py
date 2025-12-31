@@ -368,7 +368,7 @@ def main():
 
     # Coredump 解析模式
     if args.elf and args.core:
-        commands = parse_coredump(
+        commands, target_info = parse_coredump(
             elf_path=args.elf,
             core_path=args.core,
             verbose=args.verbose,
@@ -378,11 +378,22 @@ def main():
         # HTML/SVG 导出
         if args.export_html and commands:
             deduplicate = not args.no_dedup
+
+            # 使用 target buffer 的尺寸（如果可用）
+            canvas_width = args.canvas_width
+            canvas_height = args.canvas_height
+            if target_info:
+                if target_info.width > 0:
+                    canvas_width = target_info.width
+                if target_info.height > 0:
+                    canvas_height = target_info.height
+
             exporter = SVGExporter(
-                width=args.canvas_width,
-                height=args.canvas_height,
+                width=canvas_width,
+                height=canvas_height,
                 deduplicate=deduplicate,
             )
+            exporter.set_target_info(target_info)
             exporter.process_commands(commands)
             if args.export_html.endswith(".svg"):
                 exporter.export_svg(args.export_html)
