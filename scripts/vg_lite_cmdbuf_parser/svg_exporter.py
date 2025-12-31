@@ -409,6 +409,10 @@ class SVGExporter:
             <label>
                 背景色: <input type="color" id="bgColor" value="#000000" oninput="updateBgColor()">
             </label>
+            <label>
+                渲染步骤: <input type="range" id="drawOrder" min="0" max="{len(self.draw_commands)}" step="1" value="{len(self.draw_commands)}" oninput="updateDrawOrder()" style="width: 120px;">
+                <span id="drawOrderValue">{len(self.draw_commands)}/{len(self.draw_commands)}</span>
+            </label>
         </div>
         <div class="svg-container" id="svgContainer">
             {svg_content}
@@ -469,6 +473,23 @@ class SVGExporter:
             const color = document.getElementById('bgColor').value;
             const bgRect = document.querySelector('svg > rect');
             if (bgRect) bgRect.setAttribute('fill', color);
+        }}
+        
+        // 渲染步骤控制
+        function updateDrawOrder() {{
+            const value = parseInt(document.getElementById('drawOrder').value);
+            const total = {len(self.draw_commands)};
+            document.getElementById('drawOrderValue').textContent = `${{value}}/${{total}}`;
+            
+            const paths = document.querySelectorAll('svg path');
+            paths.forEach((path, index) => {{
+                const pathIndex = parseInt(path.getAttribute('data-index'));
+                if (pathIndex < value) {{
+                    path.style.display = '';
+                }} else {{
+                    path.style.display = 'none';
+                }}
+            }});
         }}
         
         // 光标功能
