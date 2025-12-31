@@ -262,6 +262,12 @@ class SVGExporter:
                     rule_val = cmd.data_word & 0x1
                     current_draw.fill_rule = "evenodd" if rule_val else "nonzero"
 
+                # VgPathControl (0x0A34) - 包含填充规则
+                elif reg_addr == 0x0A34:
+                    # bit[4] = 1 表示 EVEN_ODD 填充规则
+                    rule_val = (cmd.data_word >> 4) & 0x1
+                    current_draw.fill_rule = "evenodd" if rule_val else "nonzero"
+
                 # 变换矩阵 VgPathMatrix0-VgPathMatrix5 (0x0A40-0x0A45)
                 elif 0x0A40 <= reg_addr <= 0x0A45:
                     if current_matrix is None:
