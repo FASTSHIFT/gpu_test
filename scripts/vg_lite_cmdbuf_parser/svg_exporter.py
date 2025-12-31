@@ -392,12 +392,22 @@ class SVGExporter:
             path_elem = f'<path d="{d}" fill="{fill_color}" fill-opacity="{opacity:.2f}" fill-rule="{draw_cmd.fill_rule}" {transform} data-index="{i}" {split_attr}/>'
             paths.append(path_elem)
 
+        # 生成 scissor 矩形
+        scissor_rect = ""
+        if self.context_state and self.context_state.scissor:
+            sx, sy, sr, sb = self.context_state.scissor
+            sw = sr - sx  # width = right - x
+            sh = sb - sy  # height = bottom - y
+            if sw > 0 and sh > 0:
+                scissor_rect = f'<rect id="scissorRect" x="{sx}" y="{sy}" width="{sw}" height="{sh}" fill="none" stroke="#00ff00" stroke-width="2" stroke-dasharray="5,5" style="display: none;"/>'
+
         svg = f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="{self.width}" height="{self.height}" viewBox="0 0 {self.width} {self.height}">
   <rect width="100%" height="100%" fill="{self.background_color}"/>
   <g id="paths">
     {chr(10).join("    " + p for p in paths)}
   </g>
+  {scissor_rect}
 </svg>"""
         return svg
 
@@ -497,14 +507,14 @@ class SVGExporter:
 
             context_state_html = f"""
             <strong>上下文状态:</strong><br>
-            &nbsp;&nbsp;• 混合模式: {blend_name}<br>
-            &nbsp;&nbsp;• 滤波器: {filter_name}<br>
-            &nbsp;&nbsp;• 裁剪: {'启用' if self.context_state.scissor_enable else '禁用'} {scissor_str if self.context_state.scissor_enable else ''}<br>
-            &nbsp;&nbsp;• Alpha模式: src={self.context_state.src_alpha_mode}, dst={self.context_state.dst_alpha_mode}<br>
-            &nbsp;&nbsp;• 预乘: src={self.context_state.premultiply_src}, dst={self.context_state.premultiply_dst}<br>
-            &nbsp;&nbsp;• 曲面细分尺寸: {self.context_state.tess_width}x{self.context_state.tess_height}<br>
-            &nbsp;&nbsp;• 颜色变换: {self.context_state.color_transform}<br>
-            &nbsp;&nbsp;• 路径计数: {self.context_state.path_counter}<br>"""
+            &nbsp;&nbsp;• blend_mode (混合模式): {blend_name}<br>
+            &nbsp;&nbsp;• filter (滤波器): {filter_name}<br>
+            &nbsp;&nbsp;• scissor (裁剪区域): {scissor_str}<br>
+            &nbsp;&nbsp;• alpha_mode (Alpha模式): src={self.context_state.src_alpha_mode}, dst={self.context_state.dst_alpha_mode}<br>
+            &nbsp;&nbsp;• premultiply (预乘): src={self.context_state.premultiply_src}, dst={self.context_state.premultiply_dst}<br>
+            &nbsp;&nbsp;• tess_size (曲面细分尺寸): {self.context_state.tess_width}x{self.context_state.tess_height}<br>
+            &nbsp;&nbsp;• color_transform (颜色变换): {self.context_state.color_transform}<br>
+            &nbsp;&nbsp;• path_counter (路径计数): {self.context_state.path_counter}<br>"""
 
         html_template = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -606,6 +616,9 @@ class SVGExporter:
                 <input type="checkbox" id="showCrosshair" onchange="toggleCrosshair()"> 显示光标
             </label>
             <label>
+                <input type="checkbox" id="showScissor" onchange="toggleScissor()"> 显示裁剪区域
+            </label>
+            <label>
                 背景色: <input type="color" id="bgColor" value="#000000" oninput="updateBgColor()">
             </label>
             <label>
@@ -692,6 +705,14 @@ class SVGExporter:
             if (!crosshairEnabled) {{
                 if (crosshairH) {{ crosshairH.remove(); crosshairH = null; }}
                 if (crosshairV) {{ crosshairV.remove(); crosshairV = null; }}
+            }}
+        }}
+        
+        function toggleScissor() {{
+            const showScissor = document.getElementById('showScissor').checked;
+            const scissorRect = document.getElementById('scissorRect');
+            if (scissorRect) {{
+                scissorRect.style.display = showScissor ? '' : 'none';
             }}
         }}
         
