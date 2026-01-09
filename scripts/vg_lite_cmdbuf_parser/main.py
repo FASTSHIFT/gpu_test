@@ -384,29 +384,37 @@ def main():
         )
 
         # HTML/SVG 导出
-        if args.export_html and commands:
-            # 使用 target buffer 的尺寸（如果可用）
-            canvas_width = args.canvas_width
-            canvas_height = args.canvas_height
-            if target_info:
-                if target_info.width > 0:
-                    canvas_width = target_info.width
-                if target_info.height > 0:
-                    canvas_height = target_info.height
-
-            exporter = SVGExporter(
-                width=canvas_width,
-                height=canvas_height,
-            )
-            exporter.set_target_info(target_info)
-            exporter.set_context_state(context_state)
-            exporter.process_commands(commands)
-            if args.export_html.endswith(".svg"):
-                exporter.export_svg(args.export_html)
+        if args.export_html:
+            if not commands:
+                console = Console()
+                console.print(f"[yellow]警告: 没有解析到任何命令，无法导出 HTML 文件[/yellow]")
             else:
-                exporter.export_html(args.export_html)
-            console = Console()
-            console.print(f"[green]已导出可视化文件: {args.export_html}[/green]")
+                # 使用 target buffer 的尺寸（如果可用）
+                canvas_width = args.canvas_width
+                canvas_height = args.canvas_height
+                if target_info:
+                    if target_info.width > 0:
+                        canvas_width = target_info.width
+                    if target_info.height > 0:
+                        canvas_height = target_info.height
+
+                exporter = SVGExporter(
+                    width=canvas_width,
+                    height=canvas_height,
+                )
+                exporter.set_target_info(target_info)
+                exporter.set_context_state(context_state)
+                exporter.process_commands(commands)
+                try:
+                    if args.export_html.endswith(".svg"):
+                        exporter.export_svg(args.export_html)
+                    else:
+                        exporter.export_html(args.export_html)
+                    console = Console()
+                    console.print(f"[green]已导出可视化文件: {args.export_html}[/green]")
+                except Exception as e:
+                    console = Console()
+                    console.print(f"[red]错误: 导出 HTML 文件失败: {e}[/red]")
     elif args.file:
         if args.regs:
             parse_with_registers(

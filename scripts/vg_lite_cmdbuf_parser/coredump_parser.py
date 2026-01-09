@@ -355,6 +355,18 @@ class CoredumpParser:
 
         # 读取缓冲区数据
         buf_data = self.read_memory(klogical_ptr, buf_size)
+
+        # 如果读取失败，尝试 uncache 到 cache 地址转换
+        # 原算法: CACHE_2_UNCACHE(addr) = addr & ~(0x04000000) 将 cache 转为 uncache
+        # 反向操作: UNCACHE_2_CACHE(addr) = addr | 0x04000000 将 uncache 转回 cache
+        if buf_data is None:
+            cache_addr = klogical_ptr | 0x04000000
+            buf_data = self.read_memory(cache_addr, buf_size)
+            if buf_data is not None:
+                self.console.print(
+                    f"[cyan]地址 0x{klogical_ptr:08X} 转换为 0x{cache_addr:08X} (uncache->cache)[/cyan]"
+                )
+
         if buf_data is None:
             self.console.print(
                 f"[yellow]警告: 无法读取地址 0x{klogical_ptr:08X} 的数据[/yellow]"
@@ -493,6 +505,16 @@ class CoredumpParser:
 
         # 读取缓冲区数据
         buf_data = self.read_memory(cmdbuf_ptr, actual_size)
+
+        # 如果读取失败，尝试 uncache 到 cache 地址转换
+        if buf_data is None:
+            cache_addr = cmdbuf_ptr | 0x04000000
+            buf_data = self.read_memory(cache_addr, actual_size)
+            if buf_data is not None:
+                self.console.print(
+                    f"[cyan]地址 0x{cmdbuf_ptr:08X} 转换为 0x{cache_addr:08X} (uncache->cache)[/cyan]"
+                )
+
         if buf_data is None:
             self.console.print(
                 f"[yellow]警告: 无法读取地址 0x{cmdbuf_ptr:08X} 的数据[/yellow]"
@@ -954,6 +976,18 @@ class CoredumpParser:
 
             # 尝试从 coredump 读取路径数据
             path_data = self.read_memory(path_address, path_size)
+
+            # 如果读取失败，尝试 uncache 到 cache 地址转换
+            # 原算法: CACHE_2_UNCACHE(addr) = addr & ~(0x04000000) 将 cache 转为 uncache
+            # 反向操作: UNCACHE_2_CACHE(addr) = addr | 0x04000000 将 uncache 转回 cache
+            original_address = path_address
+            if path_data is None:
+                cache_address = path_address | 0x04000000
+                path_data = self.read_memory(cache_address, path_size)
+                if path_data is not None:
+                    cmd.details.append(
+                        f"[地址 0x{original_address:08X} 转换为 0x{cache_address:08X} (uncache->cache)]"
+                    )
 
             if path_data is None:
                 cmd.details.append(f"[无法读取地址 0x{path_address:08X}]")
